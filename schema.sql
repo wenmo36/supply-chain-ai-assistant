@@ -4,6 +4,7 @@ CREATE DATABASE IF NOT EXISTS supply_chain_ai
 
 USE supply_chain_ai;
 
+DROP TABLE IF EXISTS receipt_detail;
 DROP TABLE IF EXISTS purchase_detail;
 DROP TABLE IF EXISTS supplier;
 
@@ -24,6 +25,15 @@ CREATE TABLE purchase_detail (
     received_qty DECIMAL(18,2) NOT NULL,
     warehouse_date DATE NULL,
     FOREIGN KEY (supplier_id) REFERENCES supplier(supplier_id)
+);
+
+CREATE TABLE receipt_detail (
+    receipt_detail_id INT PRIMARY KEY,
+    purchase_detail_id INT NOT NULL,
+    receipt_date DATE NOT NULL,
+    received_qty DECIMAL(18,2) NOT NULL,
+    FOREIGN KEY (purchase_detail_id)
+        REFERENCES purchase_detail(purchase_detail_id)
 );
 
 INSERT INTO supplier (supplier_id, supplier_name) VALUES
@@ -47,3 +57,20 @@ VALUES
 (8, 'CG752615', '2026-08-20', 1, '156209', '测试物料H', 700, 9.00, 700, '2026-08-23'),
 (9, 'CG752616', '2026-08-22', 3, '156210', '测试物料I', 300, 30.00, 300, '2026-08-25'),
 (10, 'CG752617', '2026-08-25', 2, '156211', '测试物料J', 900, 7.00, 900, '2026-08-28');
+
+INSERT INTO receipt_detail
+(receipt_detail_id, purchase_detail_id, receipt_date, received_qty)
+VALUES
+(1, 1, '2026-08-02', 200),
+(2, 1, '2026-08-03', 200),
+(3, 1, '2026-08-04', 100),
+
+(4, 2, '2026-08-04', 300),
+
+(5, 3, '2026-08-03', 400),
+(6, 3, '2026-08-05', 420),
+
+(7, 4, '2026-08-07', 200),
+
+(8, 7, '2026-08-16', 200),
+(9, 7, '2026-08-18', 250);
