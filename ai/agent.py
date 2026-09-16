@@ -19,6 +19,8 @@ MySQL
 """
 
 from ai.intent import parse_intent
+from ai.chart_planner import build_chart_plan
+from ai.analysis_result import AnalysisResult
 from ai.sql_generator import generate_sql
 from ai.sql_repair import repair_sql
 
@@ -102,10 +104,15 @@ def run_analysis(question: str) -> dict:
 
     rows = run_readonly_sql(sql)
 
-    return {
-        "question": question,
-        "analysis_plan": analysis_plan,
-        "sql": sql,
-        "repair_count": repair_count,
-        "rows": rows
-    }
+    chart_plan = build_chart_plan(
+    analysis_plan
+)
+
+    return AnalysisResult(
+    question=question,
+    analysis_plan=analysis_plan,
+    sql=sql,
+    rows=rows,
+    chart_plan=chart_plan,
+    repair_count=repair_count
+)

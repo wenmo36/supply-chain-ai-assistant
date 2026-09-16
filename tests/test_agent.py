@@ -1,5 +1,9 @@
 """
 V2 Analysis Agent 测试
+
+测试：
+1. 供应商采购金额 TOP5
+2. 采购订单超收
 """
 
 from ai.agent import run_analysis
@@ -14,16 +18,26 @@ def test_supplier_purchase_top5():
         "查询采购金额最高的5个供应商"
     )
 
-    assert result["analysis_plan"]["metric"] == "purchase_amount"
-    assert result["analysis_plan"]["dimension"] == "supplier"
+    assert (
+        result.analysis_plan["metric"]
+        == "purchase_amount"
+    )
 
-    assert "purchase_detail" in result["sql"]
-    assert "purchase_qty" in result["sql"]
-    assert "unit_price" in result["sql"]
+    assert (
+        result.analysis_plan["dimension"]
+        == "supplier"
+    )
 
-    assert len(result["rows"]) <= 5
+    assert "purchase_detail" in result.sql
+    assert "purchase_qty" in result.sql
+    assert "unit_price" in result.sql
 
-    assert result["repair_count"] <= 2
+    assert len(result.rows) <= 5
+
+    assert result.repair_count <= 2
+
+    assert result.chart_plan["chart_type"] == "bar_chart"
+
 
 def test_over_receipt_orders():
     """
@@ -34,12 +48,21 @@ def test_over_receipt_orders():
         "哪些采购订单存在超收？"
     )
 
-    assert result["analysis_plan"]["metric"] == "over_receipt_qty"
-    assert result["analysis_plan"]["dimension"] == "order"
+    assert (
+        result.analysis_plan["metric"]
+        == "over_receipt_qty"
+    )
 
-    assert "purchase_detail" in result["sql"]
-    assert "SUM(received_qty)" in result["sql"]
-    assert "SUM(purchase_qty)" in result["sql"]
-    assert "GROUP BY order_no" in result["sql"]
+    assert (
+        result.analysis_plan["dimension"]
+        == "order"
+    )
 
-    assert result["repair_count"] <= 2
+    assert "purchase_detail" in result.sql
+    assert "SUM(received_qty)" in result.sql
+    assert "SUM(purchase_qty)" in result.sql
+    assert "GROUP BY order_no" in result.sql
+
+    assert result.repair_count <= 2
+
+    assert result.chart_plan["chart_type"] == "table"
