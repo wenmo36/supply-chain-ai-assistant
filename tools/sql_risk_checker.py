@@ -2,26 +2,27 @@
 SQL 业务风险检查器
 
 职责：
-1. 调用只读 SQL 安全检查
-2. 检查指标公式是否符合语义定义
-3. 检查关键分析是否使用正确粒度
-4. 为后续 1:N JOIN 风险检测提供入口
-
-注意：
-这里只负责检查，不执行 SQL。
+1. SQL 只读安全检查
+2. 指标公式检查
+3. 指标事实粒度检查
+4. 基于数据库外键关系检查 JOIN 风险
+5. 为后续 Grain-Aware SQL Validation 提供基础
 """
 
 import re
 
 from tools.sql_checker import validate_sql
+
+from database.schema import get_relationships
+
 from semantic.metrics import METRICS
-from semantic.business_rules import BUSINESS_RULES
 
 
 def _normalize_sql(sql: str) -> str:
     """
     统一 SQL 格式，方便规则检查。
     """
+
     return re.sub(
         r"\s+",
         " ",
@@ -35,12 +36,6 @@ def _check_purchase_amount(
 ) -> None:
     """
     检查采购金额公式。
-
-    允许：
-        purchase_qty * unit_price
-
-    以及带表别名的：
-        pd.purchase_qty * pd.unit_price
     """
 
     normalized = _normalize_sql(sql)
@@ -55,7 +50,6 @@ def _check_purchase_amount(
             "采购金额检查失败：SQL 未使用 unit_price"
         )
 
-    # 允许带表别名
     purchase_amount_pattern = re.compile(
         r"(?:\b\w+\.)?purchase_qty"
         r"\s*\*\s*"
@@ -98,11 +92,7 @@ def _check_over_receipt(
             "缺少 SUM(purchase_qty)"
         )
 
-    if (
-        "having" not in normalized
-        or "received_qty" not in normalized
-        or "purchase_qty" not in normalized
-    ):
+    if "having" not in normalized:
         errors.append(
             "超收检查失败："
             "必须通过 HAVING 判断超收"
@@ -111,38 +101,73 @@ def _check_over_receipt(
 
 def _check_purchase_grain(
     sql: str,
+    metric: str,
     errors: list[str]
 ) -> None:
     """
-    检查采购事实是否使用 purchase_detail。
+    检查指标是否使用正确事实表。
+    """
+
+    metric_info = METRICS.get(metric)
+
+    if metric_info is None:
+        errors.append(
+            f"未知指标：{metric}"
+        )
+        return
+
+    fact_table = metric_info["fact_table"]
+    normalized = _normalize_sql(sql)
+
+    if fact_table.lower() not in normalized:
+        errors.append(
+            f"粒度检查失败：指标 {metric} "
+            f"要求使用事实表 {fact_table}"
+        )
+
+
+def _get_relationships_for_sql(
+    sql: str
+) -> list[dict]:
+    """
+    找出 SQL 中涉及的数据库关系。
     """
 
     normalized = _normalize_sql(sql)
 
-    if "purchase_detail" not in normalized:
-        errors.append(
-            "采购指标检查失败："
-            "未使用 purchase_detail"
-        )
+    relationships = get_relationships()
+
+    matched = []
+
+    for relationship in relationships:
+
+        child_table = relationship["child_table"].lower()
+        parent_table = relationship["parent_table"].lower()
+
+        if (
+            child_table in normalized
+            and parent_table in normalized
+        ):
+            matched.append(relationship)
+
+    return matched
 
 
-def _check_join_risk(
+def _check_join_cardinality(
     sql: str,
+    metric: str,
     errors: list[str]
 ) -> None:
     """
-    第一阶段的 JOIN 风险检查。
+    基于指标事实表 + 数据库关系
+    检查潜在的 JOIN 聚合风险。
 
-    当前数据库只有：
-    purchase_detail
-    supplier
+    当前阶段规则：
 
-    supplier 是采购事实的维度表，
-    purchase_detail -> supplier 为 N:1，
-    属于当前已知安全 JOIN。
-
-    后续增加 receipt_detail 等事实表后，
-    这里会扩展为真正的 1:N 聚合风险检测。
+    1. 如果没有 JOIN，不检查。
+    2. 指标事实表 JOIN 到父表（N:1）通常安全。
+    3. 如果未来事实表作为父表被 JOIN 到 N 个子表，
+       可能导致事实指标重复，需要预警。
     """
 
     normalized = _normalize_sql(sql)
@@ -150,17 +175,66 @@ def _check_join_risk(
     if "join" not in normalized:
         return
 
-    has_purchase_detail = "purchase_detail" in normalized
-    has_supplier = "supplier" in normalized
+    metric_info = METRICS.get(metric)
 
-    if has_purchase_detail and has_supplier:
+    if metric_info is None:
         return
 
-    errors.append(
-        "JOIN 风险检查："
-        "发现当前业务规则之外的 JOIN，"
-        "需要人工确认是否存在 1:N 聚合风险"
-    )
+    fact_table = metric_info["fact_table"].lower()
+
+    relationships = _get_relationships_for_sql(sql)
+
+    for relationship in relationships:
+
+        child_table = relationship["child_table"].lower()
+        parent_table = relationship["parent_table"].lower()
+        relation = relationship["relationship"]
+
+        # 指标事实表是 child：
+        #
+        # purchase_detail N
+        #        ↓
+        # supplier 1
+        #
+        # N:1 JOIN 一般安全。
+        if (
+            relation == "N:1"
+            and child_table == fact_table
+        ):
+            continue
+
+        # 指标事实表是 parent：
+        #
+        # fact 1
+        #      ↓
+        # child N
+        #
+        # 如果直接 JOIN 后 SUM(fact.xxx)，
+        # 可能出现指标重复。
+        if (
+            relation == "N:1"
+            and parent_table == fact_table
+        ):
+            errors.append(
+                f"潜在 1:N 聚合风险："
+                f"指标事实表 {fact_table} "
+                f"与 {child_table} 存在 1:N 关系，"
+                f"请先聚合子表或确认指标粒度"
+            )
+
+        elif relation == "1:N":
+
+            errors.append(
+                f"潜在 1:N JOIN 风险："
+                f"{parent_table} → {child_table}"
+            )
+
+        elif relation == "N:N":
+
+            errors.append(
+                f"高风险 JOIN："
+                f"{child_table} ↔ {parent_table} 为 N:N"
+            )
 
 
 def validate_business_sql(
@@ -168,35 +242,45 @@ def validate_business_sql(
     analysis_plan: dict
 ) -> None:
     """
-    对生成 SQL 执行企业业务规则检查。
-
-    检查失败时抛出 ValueError。
+    执行企业级 SQL 业务校验。
     """
 
-    # 第一层：只读安全检查
+    # 第一层：SQL 安全
     validate_sql(sql)
 
     errors = []
 
     metric = analysis_plan.get("metric")
 
+    # 第二层：事实表 / 粒度
+    _check_purchase_grain(
+        sql,
+        metric,
+        errors
+    )
+
+    # 第三层：指标专属业务规则
+
     if metric == "purchase_amount":
-        _check_purchase_grain(sql, errors)
-        _check_purchase_amount(sql, errors)
+
+        _check_purchase_amount(
+            sql,
+            errors
+        )
 
     elif metric == "over_receipt_qty":
-        _check_purchase_grain(sql, errors)
-        _check_over_receipt(sql, errors)
 
-    else:
-        metric_info = METRICS.get(metric)
+        _check_over_receipt(
+            sql,
+            errors
+        )
 
-        if metric_info is None:
-            errors.append(
-                f"未知指标：{metric}"
-            )
-
-    _check_join_risk(sql, errors)
+    # 第四层：JOIN 基数风险
+    _check_join_cardinality(
+        sql,
+        metric,
+        errors
+    )
 
     if errors:
         raise ValueError(
