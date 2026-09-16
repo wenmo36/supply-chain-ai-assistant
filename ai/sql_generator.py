@@ -1,0 +1,205 @@
+"""
+企业级 SQL 生成模块
+
+职责：
+1. 接收 Analysis Plan
+2. 读取数据库真实 Schema
+3. 读取业务指标、维度和业务规则
+4. 生成标准化只读 SQL
+
+注意：
+本模块只负责生成 SQL。
+不负责执行 SQL。
+"""
+
+import json
+
+from openai import OpenAI
+
+from config.settings import (
+    AI_API_KEY,
+    AI_BASE_URL,
+    AI_MODEL
+)
+
+from database.schema import get_schema
+
+from semantic.metrics import METRICS
+from semantic.dimensions import DIMENSIONS
+from semantic.business_rules import BUSINESS_RULES
+
+
+client = OpenAI(
+    api_key=AI_API_KEY,
+    base_url=AI_BASE_URL
+)
+
+
+SQL_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "sql": {
+            "type": "string"
+        }
+    },
+    "required": [
+        "sql"
+    ],
+    "additionalProperties": False
+}
+
+
+SQL_SYSTEM_PROMPT = """
+你是一名企业级供应链 BI SQL 专家。
+
+你的任务是：
+根据 Analysis Plan、数据库真实 Schema、业务指标定义、
+分析维度和业务规则，生成一条正确的 MySQL 只读 SQL。
+
+你只能生成 SQL。
+不要执行 SQL。
+不要解释 SQL。
+不要输出 Markdown。
+不要输出 ```sql。
+只返回符合 JSON Schema 的结果。
+
+====================
+核心原则
+====================
+
+1. 必须严格使用数据库真实存在的表和字段。
+
+2. 必须严格按照 metric 定义计算指标。
+
+3. 必须按照正确的事实粒度进行聚合。
+
+4. 如果存在 1:N JOIN 风险，
+   不允许直接聚合可能被重复展开的父表指标。
+
+5. 涉及多个事实粒度时：
+   先分别聚合，再 JOIN。
+
+6. 采购金额：
+   purchase_qty * unit_price
+
+7. 采购数量：
+   purchase_qty
+
+8. 收料数量：
+   received_qty
+
+9. 订单层超收：
+   SUM(received_qty) > SUM(purchase_qty)
+
+10. 只允许 SELECT 或 WITH 开头的查询。
+
+11. 禁止：
+    INSERT
+    UPDATE
+    DELETE
+    DROP
+    ALTER
+    TRUNCATE
+    CREATE
+    REPLACE
+    GRANT
+    REVOKE
+    CALL
+    LOAD DATA
+    INTO OUTFILE
+
+12. 不允许虚构表、字段或关系。
+
+13. 对排名问题：
+    使用 ORDER BY + LIMIT。
+
+14. 对供应商：
+    supplier.supplier_id
+    = purchase_detail.supplier_id
+
+15. 所有非聚合字段必须正确出现在 GROUP BY 中。
+
+====================
+业务语义优先于 SQL 简洁性
+====================
+
+SQL 首先必须业务正确，
+其次才考虑简洁。
+
+如果一个写法虽然语法正确，
+但是可能造成指标重复，
+必须选择更安全的写法。
+"""
+
+
+def _build_context(analysis_plan: dict) -> str:
+    """
+    构造 SQL 生成所需的完整上下文。
+    """
+
+    context = {
+        "analysis_plan": analysis_plan,
+        "database_schema": get_schema(),
+        "metrics": METRICS,
+        "dimensions": DIMENSIONS,
+        "business_rules": BUSINESS_RULES
+    }
+
+    return json.dumps(
+        context,
+        ensure_ascii=False,
+        indent=2,
+        default=str
+    )
+
+
+def generate_sql(analysis_plan: dict) -> str:
+    """
+    根据 Analysis Plan 生成 SQL。
+    """
+
+    if not analysis_plan:
+        raise ValueError("Analysis Plan 不能为空")
+
+    user_prompt = f"""
+请根据下面的 Analysis Plan 和企业业务上下文生成 MySQL SQL。
+
+{_build_context(analysis_plan)}
+"""
+
+    response = client.chat.completions.create(
+        model=AI_MODEL,
+        messages=[
+            {
+                "role": "system",
+                "content": SQL_SYSTEM_PROMPT
+            },
+            {
+                "role": "user",
+                "content": user_prompt
+            }
+        ],
+        response_format={
+            "type": "json_schema",
+            "json_schema": {
+                "name": "sql_generation",
+                "strict": True,
+                "schema": SQL_SCHEMA
+            }
+        },
+        temperature=0
+    )
+
+    content = response.choices[0].message.content
+
+    if not content:
+        raise ValueError("AI 未返回 SQL")
+
+    result = json.loads(content)
+
+    sql = result.get("sql")
+
+    if not sql:
+        raise ValueError("AI 返回结果中没有 SQL")
+
+    return sql.strip()
