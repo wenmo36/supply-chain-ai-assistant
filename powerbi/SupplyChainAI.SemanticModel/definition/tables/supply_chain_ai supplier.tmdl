@@ -1,0 +1,31 @@
+table 'supply_chain_ai supplier'
+	lineageTag: 3debdd53-6681-4337-b8d4-d38dd06af81b
+
+	column supplier_id
+		dataType: int64
+		formatString: 0
+		lineageTag: 6e4a173a-246d-4b77-8436-b4c3acddbfea
+		summarizeBy: none
+		sourceColumn: supplier_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column supplier_name
+		dataType: string
+		lineageTag: dea0b160-278a-4182-b0bf-ad74cb13da7c
+		summarizeBy: none
+		sourceColumn: supplier_name
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'supply_chain_ai supplier' = m
+		mode: import
+		source =
+				let
+				    源 = MySQL.Database("localhost", "supply_chain_ai", [ReturnSingleDatabase=true]),
+				    supply_chain_ai_supplier = 源{[Schema="supply_chain_ai",Item="supplier"]}[Data]
+				in
+				    supply_chain_ai_supplier
+
+	annotation PBI_ResultType = Table
+

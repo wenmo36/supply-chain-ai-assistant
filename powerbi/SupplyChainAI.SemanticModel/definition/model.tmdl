@@ -1,0 +1,25 @@
+model Model
+	culture: zh-CN
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: zh-CN
+	valueFilterBehavior: independent
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation __PBI_TimeIntelligenceEnabled = 1
+
+annotation PBI_QueryOrder = ["supply_chain_ai purchase_detail","supply_chain_ai receipt_detail","supply_chain_ai supplier"]
+
+annotation PBI_ProTooling = ["DevMode"]
+
+ref table 'supply_chain_ai purchase_detail'
+ref table DateTableTemplate_5813c85e-8f70-4bc9-8e81-2212e6072565
+ref table LocalDateTable_f54dea45-ad80-48ba-b2c6-bab810cdd578
+ref table LocalDateTable_f58f7815-de0d-48bb-b19c-feb0707c593b
+ref table 'supply_chain_ai receipt_detail'
+ref table LocalDateTable_6d6b3807-2328-43a0-834e-e83a17ac4209
+ref table 'supply_chain_ai supplier'
+
+ref cultureInfo zh-CN
+

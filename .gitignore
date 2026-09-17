@@ -74,3 +74,17 @@ output/
 
 *.sql.bak
 *.dump
+
+
+# ==========================
+# Power BI
+# ==========================
+
+# Power BI local cache
+.pbi/
+
+# Analysis Services local cache
+*.abf
+
+# Power BI temporary files
+*.tmp

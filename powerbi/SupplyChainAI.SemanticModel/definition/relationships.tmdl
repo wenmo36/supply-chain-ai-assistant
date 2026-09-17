@@ -1,0 +1,27 @@
+relationship bc8f5c9c-fd51-454b-b779-37a02c5e57d4
+	joinOnDateBehavior: datePartOnly
+	fromColumn: 'supply_chain_ai purchase_detail'.order_date
+	toColumn: LocalDateTable_f54dea45-ad80-48ba-b2c6-bab810cdd578.Date
+
+relationship 97cc81de-fcdd-4474-b2c4-e41069f66308
+	joinOnDateBehavior: datePartOnly
+	fromColumn: 'supply_chain_ai purchase_detail'.warehouse_date
+	toColumn: LocalDateTable_f58f7815-de0d-48bb-b19c-feb0707c593b.Date
+
+relationship 7279a92f-f277-4437-804b-2e4bc3960892
+	joinOnDateBehavior: datePartOnly
+	fromColumn: 'supply_chain_ai receipt_detail'.receipt_date
+	toColumn: LocalDateTable_6d6b3807-2328-43a0-834e-e83a17ac4209.Date
+
+relationship b90e7105-63bb-4c35-a105-ad2a055e52e9
+	fromColumn: 'supply_chain_ai purchase_detail'.supplier_id
+	toColumn: 'supply_chain_ai supplier'.supplier_id
+
+	annotation PBI_IsFromSource = FS
+
+relationship f029c15e-2ad2-437f-b6c2-c1d2b9a8df13
+	fromColumn: 'supply_chain_ai receipt_detail'.purchase_detail_id
+	toColumn: 'supply_chain_ai purchase_detail'.purchase_detail_id
+
+	annotation PBI_IsFromSource = FS
+

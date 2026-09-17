@@ -1,0 +1,118 @@
+table 'supply_chain_ai purchase_detail'
+	lineageTag: 021eb592-5421-45de-90be-f990075a522d
+
+	column purchase_detail_id
+		dataType: int64
+		formatString: 0
+		lineageTag: 3e9443cf-1178-4a95-af10-87df6b6ddd4a
+		summarizeBy: none
+		sourceColumn: purchase_detail_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column order_no
+		dataType: string
+		lineageTag: 2d195f95-75df-49b7-8efa-8769d6788339
+		summarizeBy: none
+		sourceColumn: order_no
+
+		annotation SummarizationSetBy = Automatic
+
+	column order_date
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 62b3a536-44c9-49fb-801f-9d60b2268bfb
+		summarizeBy: none
+		sourceColumn: order_date
+
+		variation 变体
+			isDefault
+			relationship: bc8f5c9c-fd51-454b-b779-37a02c5e57d4
+			defaultHierarchy: LocalDateTable_f54dea45-ad80-48ba-b2c6-bab810cdd578.日期层次结构
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column supplier_id
+		dataType: int64
+		formatString: 0
+		lineageTag: 468d2e36-2762-481f-8974-ee018485fe5d
+		summarizeBy: none
+		sourceColumn: supplier_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column material_code
+		dataType: string
+		lineageTag: 0f04cd30-b70f-4271-8a6c-ff2c4cbb41b1
+		summarizeBy: none
+		sourceColumn: material_code
+
+		annotation SummarizationSetBy = Automatic
+
+	column material_name
+		dataType: string
+		lineageTag: d1a33dba-7e79-474e-9680-c0c59091378a
+		summarizeBy: none
+		sourceColumn: material_name
+
+		annotation SummarizationSetBy = Automatic
+
+	column purchase_qty
+		dataType: double
+		lineageTag: d88e5b04-7611-4932-bc5b-dde07c25335a
+		summarizeBy: sum
+		sourceColumn: purchase_qty
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column unit_price
+		dataType: double
+		lineageTag: 3d427509-802b-4fd0-90fc-08d88bfa6d60
+		summarizeBy: sum
+		sourceColumn: unit_price
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column received_qty
+		dataType: double
+		lineageTag: b064a3c4-22ae-4bd7-9d5e-85130afab303
+		summarizeBy: sum
+		sourceColumn: received_qty
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column warehouse_date
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 6a6f1566-8b87-46ba-b707-95edfd454812
+		summarizeBy: none
+		sourceColumn: warehouse_date
+
+		variation 变体
+			isDefault
+			relationship: 97cc81de-fcdd-4474-b2c4-e41069f66308
+			defaultHierarchy: LocalDateTable_f58f7815-de0d-48bb-b19c-feb0707c593b.日期层次结构
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	partition 'supply_chain_ai purchase_detail' = m
+		mode: import
+		source =
+				let
+				    源 = MySQL.Database("localhost", "supply_chain_ai", [ReturnSingleDatabase=true]),
+				    supply_chain_ai_purchase_detail = 源{[Schema="supply_chain_ai",Item="purchase_detail"]}[Data]
+				in
+				    supply_chain_ai_purchase_detail
+
+	annotation PBI_ResultType = Table
+

@@ -1,0 +1,58 @@
+table 'supply_chain_ai receipt_detail'
+	lineageTag: 60a0e3f9-cbe8-4b93-8ca0-a833dd1cb4de
+
+	column receipt_detail_id
+		dataType: int64
+		formatString: 0
+		lineageTag: 1e1d6887-7b1c-440b-b21f-33b0a615463d
+		summarizeBy: sum
+		sourceColumn: receipt_detail_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column purchase_detail_id
+		dataType: int64
+		formatString: 0
+		lineageTag: 294969f7-bab2-4a39-a33a-69153b283cf4
+		summarizeBy: none
+		sourceColumn: purchase_detail_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column receipt_date
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: e3da8076-8125-49f0-9cbe-35ee86898537
+		summarizeBy: none
+		sourceColumn: receipt_date
+
+		variation 变体
+			isDefault
+			relationship: 7279a92f-f277-4437-804b-2e4bc3960892
+			defaultHierarchy: LocalDateTable_6d6b3807-2328-43a0-834e-e83a17ac4209.日期层次结构
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column received_qty
+		dataType: double
+		lineageTag: 2e718eb7-1053-42f1-bbe6-fe8df26399f0
+		summarizeBy: sum
+		sourceColumn: received_qty
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition 'supply_chain_ai receipt_detail' = m
+		mode: import
+		source =
+				let
+				    源 = MySQL.Database("localhost", "supply_chain_ai", [ReturnSingleDatabase=true]),
+				    supply_chain_ai_receipt_detail = 源{[Schema="supply_chain_ai",Item="receipt_detail"]}[Data]
+				in
+				    supply_chain_ai_receipt_detail
+
+	annotation PBI_ResultType = Table
+

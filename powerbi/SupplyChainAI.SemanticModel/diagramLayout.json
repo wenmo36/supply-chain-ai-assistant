@@ -1,0 +1,61 @@
+{
+  "version": "1.1.0",
+  "diagrams": [
+    {
+      "ordinal": 0,
+      "scrollPosition": {
+        "x": 0,
+        "y": 0
+      },
+      "nodes": [
+        {
+          "location": {
+            "x": 334.18475118062986,
+            "y": -50
+          },
+          "nodeIndex": "supply_chain_ai purchase_detail",
+          "nodeLineageTag": "021eb592-5421-45de-90be-f990075a522d",
+          "size": {
+            "height": 300,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 50,
+            "y": -6.9348908226586445
+          },
+          "nodeIndex": "supply_chain_ai receipt_detail",
+          "nodeLineageTag": "60a0e3f9-cbe8-4b93-8ca0-a833dd1cb4de",
+          "size": {
+            "height": 176,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 618.36163941535983,
+            "y": 49.32499263243443
+          },
+          "nodeIndex": "supply_chain_ai supplier",
+          "nodeLineageTag": "3debdd53-6681-4337-b8d4-d38dd06af81b",
+          "size": {
+            "height": 128,
+            "width": 234
+          },
+          "zIndex": 0
+        }
+      ],
+      "name": "所有表",
+      "zoomValue": 100,
+      "pinKeyFieldsToTop": false,
+      "showExtraHeaderInfo": false,
+      "hideKeyFieldsWhenCollapsed": false,
+      "tablesLocked": false
+    }
+  ],
+  "selectedDiagram": "所有表",
+  "defaultDiagram": "所有表"
+}
