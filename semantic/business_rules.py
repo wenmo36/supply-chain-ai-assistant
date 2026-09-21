@@ -86,6 +86,31 @@ BUSINESS_RULES = {
         "name": "采购金额定义",
         "rule": "采购金额使用采购数量计算，不使用收料数量替代",
         "formula": "purchase_qty * unit_price"
+    },
+
+    "unreceived_qty": {
+        "name": "未收数量",
+        "rule": "未收数量不能为负数，超收明细按 0 计算",
+        "formula": "GREATEST(purchase_qty - received_qty, 0)"
+    },
+
+    "receipt_rate": {
+        "name": "收货率",
+        "rule": "收货率使用汇总后的收料数量除以采购数量，并防止除零",
+        "formula": "SUM(received_qty) / NULLIF(SUM(purchase_qty), 0) * 100"
+    },
+
+    "time_granularity": {
+        "name": "时间粒度",
+        "rule": (
+            "日使用 DATE(date_field)，月使用 DATE_FORMAT(date_field, '%Y-%m')，"
+            "季度使用 YEAR 和 QUARTER，年使用 YEAR(date_field)"
+        )
+    },
+
+    "date_range": {
+        "name": "日期范围",
+        "rule": "date_from 和 date_to 必须作为闭区间作用于 Analysis Plan 指定的日期字段"
     }
 
 }

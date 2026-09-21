@@ -40,6 +40,20 @@ GLOSSARY = {
     "超收数量": "over_receipt_qty",
     "超收量": "over_receipt_qty",
 
+    "采购订单数": "purchase_order_count",
+    "订单数量": "purchase_order_count",
+    "供应商数": "supplier_count",
+    "供应商数量": "supplier_count",
+    "物料种类数": "material_count",
+    "物料数量": "material_count",
+    "未收数量": "unreceived_qty",
+    "未到货数量": "unreceived_qty",
+    "欠交数量": "unreceived_qty",
+    "收货率": "receipt_rate",
+    "到货率": "receipt_rate",
+    "加权采购单价": "weighted_unit_price",
+    "加权平均单价": "weighted_unit_price",
+
     # =========================
     # 维度
     # =========================

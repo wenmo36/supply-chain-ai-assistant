@@ -30,6 +30,38 @@ from semantic.dimensions import DIMENSIONS
 from semantic.glossary import GLOSSARY
 
 
+FILTER_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "field": {
+            "type": "string",
+            "enum": list(DIMENSIONS.keys())
+        },
+        "operator": {
+            "type": "string",
+            "enum": [
+                "eq",
+                "ne",
+                "gt",
+                "gte",
+                "lt",
+                "lte",
+                "contains"
+            ]
+        },
+        "value": {
+            "type": ["string", "number"]
+        }
+    },
+    "required": [
+        "field",
+        "operator",
+        "value"
+    ],
+    "additionalProperties": False
+}
+
+
 def _get_client() -> OpenAI:
     """Create the API client only when a model call is required."""
 
@@ -78,6 +110,16 @@ INTENT_SCHEMA = {
         },
         "condition": {
             "type": ["string", "null"]
+        },
+        "date_from": {
+            "type": ["string", "null"]
+        },
+        "date_to": {
+            "type": ["string", "null"]
+        },
+        "filters": {
+            "type": "array",
+            "items": FILTER_SCHEMA
         }
     },
     "required": [
@@ -88,7 +130,10 @@ INTENT_SCHEMA = {
         "sort",
         "time_granularity",
         "period",
-        "condition"
+        "condition",
+        "date_from",
+        "date_to",
+        "filters"
     ],
     "additionalProperties": False
 }
@@ -141,6 +186,11 @@ INTENT_SYSTEM_PROMPT = """
 - 只能使用提供的 dimension
 - 不允许虚构不存在的指标或维度
 - 不确定的信息使用 null
+- 没有普通筛选条件时 filters 使用空数组
+- 日期范围必须拆分成 YYYY-MM-DD 格式的 date_from 和 date_to
+- “某年某月”应转换为该月第一天和最后一天
+- filters 只表达供应商、订单、物料和日期等普通字段筛选
+- 超收等指标条件仍放在 condition
 - 不要输出 SQL
 - 不要输出解释文字
 - 必须严格输出 JSON
@@ -163,6 +213,13 @@ summary
 表示总体汇总。
 
 业务术语必须优先参考 glossary。
+
+时间规则：
+
+- 按日/月/季度/年分析时 intent 使用 trend
+- 同时设置对应的 time_granularity
+- dimension 使用问题所针对的日期维度
+- 没有明确日期字段时，采购分析默认使用 order_date
 """
 
 

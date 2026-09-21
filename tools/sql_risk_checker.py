@@ -16,6 +16,7 @@ from tools.sql_checker import validate_sql
 from database.schema import get_relationships
 
 from semantic.metrics import METRICS
+from semantic.dimensions import DIMENSIONS
 
 
 def _normalize_sql(sql: str) -> str:
@@ -97,6 +98,125 @@ def _check_over_receipt(
             "超收检查失败："
             "必须通过 HAVING 判断超收"
         )
+
+
+def _check_extended_metric(
+    sql: str,
+    metric: str,
+    errors: list[str]
+) -> None:
+    normalized = _normalize_sql(sql)
+    qualified = r"(?:\b\w+\.)?"
+
+    count_fields = {
+        "purchase_order_count": "order_no",
+        "supplier_count": "supplier_id",
+        "material_count": "material_code",
+    }
+    if metric in count_fields:
+        field = count_fields[metric]
+        pattern = re.compile(
+            rf"count\s*\(\s*distinct\s+{qualified}{field}\s*\)",
+            re.IGNORECASE,
+        )
+        if not pattern.search(normalized):
+            errors.append(
+                f"{METRICS[metric]['name']}检查失败：必须使用 "
+                f"COUNT(DISTINCT {field})"
+            )
+
+    elif metric == "unreceived_qty":
+        required = ("greatest", "purchase_qty", "received_qty")
+        if not all(token in normalized for token in required):
+            errors.append(
+                "未收数量检查失败：必须使用 "
+                "GREATEST(purchase_qty - received_qty, 0)"
+            )
+
+    elif metric == "receipt_rate":
+        required = ("sum(", "received_qty", "purchase_qty", "nullif", "* 100")
+        if not all(token in normalized for token in required):
+            errors.append(
+                "收货率检查失败：必须使用汇总收料数量除以汇总采购数量，"
+                "并通过 NULLIF 防止除零"
+            )
+
+    elif metric == "weighted_unit_price":
+        required = ("purchase_qty", "unit_price", "nullif", "sum(")
+        if not all(token in normalized for token in required):
+            errors.append(
+                "加权采购单价检查失败：必须使用采购金额除以汇总采购数量"
+            )
+
+
+def _check_time_analysis(
+    sql: str,
+    analysis_plan: dict,
+    errors: list[str]
+) -> None:
+    if analysis_plan.get("intent") != "trend":
+        return
+
+    normalized = _normalize_sql(sql)
+    granularity = analysis_plan.get("time_granularity")
+    expected_tokens = {
+        "day": ("date(",),
+        "month": ("date_format(", "%y-%m"),
+        "quarter": ("year(", "quarter("),
+        "year": ("year(",),
+    }
+
+    if granularity not in expected_tokens:
+        errors.append("时间趋势检查失败：缺少有效的 time_granularity")
+        return
+
+    if not all(
+        token in normalized
+        for token in expected_tokens[granularity]
+    ):
+        errors.append(
+            f"时间趋势检查失败：SQL 未按 {granularity} 粒度聚合"
+        )
+
+    if " period" not in normalized:
+        errors.append("时间趋势检查失败：时间表达式必须使用别名 period")
+
+    if "order by" not in normalized:
+        errors.append("时间趋势检查失败：必须按 period 排序")
+
+
+def _check_plan_filters(
+    sql: str,
+    analysis_plan: dict,
+    errors: list[str]
+) -> None:
+    normalized = _normalize_sql(sql)
+
+    for key in ("date_from", "date_to"):
+        value = analysis_plan.get(key)
+        if value and str(value).lower() not in normalized:
+            errors.append(f"筛选检查失败：SQL 遗漏 {key}={value}")
+
+    for item in analysis_plan.get("filters") or []:
+        field = item.get("field")
+        value = item.get("value")
+        dimension = DIMENSIONS.get(field, {})
+        candidates = {
+            field,
+            dimension.get("key"),
+            dimension.get("label"),
+            dimension.get("field"),
+        }
+        candidates.discard(None)
+
+        if not any(str(candidate).lower() in normalized for candidate in candidates):
+            errors.append(f"筛选检查失败：SQL 遗漏筛选字段 {field}")
+
+        if value is not None and str(value).lower() not in normalized:
+            errors.append(f"筛选检查失败：SQL 遗漏筛选值 {value}")
+
+        if item.get("operator") == "contains" and " like " not in normalized:
+            errors.append("筛选检查失败：contains 必须使用 LIKE")
 
 
 def _check_purchase_grain(
@@ -274,6 +394,26 @@ def validate_business_sql(
             sql,
             errors
         )
+
+    else:
+
+        _check_extended_metric(
+            sql,
+            metric,
+            errors
+        )
+
+    _check_time_analysis(
+        sql,
+        analysis_plan,
+        errors
+    )
+
+    _check_plan_filters(
+        sql,
+        analysis_plan,
+        errors
+    )
 
     # 第四层：JOIN 基数风险
     _check_join_cardinality(

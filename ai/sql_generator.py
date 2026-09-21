@@ -127,6 +127,24 @@ SQL_SYSTEM_PROMPT = """
 
 15. 所有非聚合字段必须正确出现在 GROUP BY 中。
 
+16. 必须严格使用 Analysis Plan 中的 date_from、date_to 和 filters。
+
+17. 日期范围使用闭区间：
+    date_field >= date_from AND date_field <= date_to。
+
+18. 时间趋势必须按 time_granularity 生成 period：
+    day: DATE(date_field)
+    month: DATE_FORMAT(date_field, '%Y-%m')
+    quarter: CONCAT(YEAR(date_field), '-Q', QUARTER(date_field))
+    year: YEAR(date_field)
+    该表达式统一使用别名 period，并按 period 升序排序。
+
+19. filters 中的字段必须通过 dimension 定义映射到真实字段。
+    contains 使用 LIKE，不允许把用户输入解释为 SQL 代码。
+
+20. 指标公式以 metrics 中的 sql_expression 为准，
+    包括去重计数、未收数量、收货率和加权采购单价。
+
 ====================
 业务语义优先于 SQL 简洁性
 ====================

@@ -26,6 +26,12 @@ def test_business_labels_and_number_formatting():
     assert _display_name("purchase_amount") == "采购金额"
     assert _format_value(23300.0, "purchase_amount") == "¥23,300"
     assert _format_value(20.0, "over_receipt_qty") == "20"
+    assert _format_value(87.5, "receipt_rate") == "87.50%"
+
+
+def test_time_dimension_maps_to_period_alias():
+    rows = [{"period": "2026-08", "purchase_amount": 1000}]
+    assert _resolve_column(rows, "order_date") == "period"
 
 
 def test_chinese_font_configured():

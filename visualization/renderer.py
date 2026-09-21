@@ -108,6 +108,7 @@ FIELD_LABELS = {
     "material_name": "物料名称",
     "warehouse_date": "入库日期",
     "receipt_date": "收货日期",
+    "period": "期间",
 }
 
 
@@ -135,6 +136,10 @@ def _format_value(value: Any, semantic_name: str | None = None) -> str:
 
     if unit == "元":
         return f"¥{formatted}"
+    if unit == "%":
+        return f"{formatted}%"
+    if unit == "元/单位":
+        return f"¥{formatted}/单位"
     if unit and unit != "数量":
         return f"{formatted} {unit}"
     return formatted
@@ -220,6 +225,12 @@ def _resolve_column(
                 and field_name in available_columns
             ):
                 return field_name
+
+        if (
+            dimension.get("type") == "date"
+            and "period" in available_columns
+        ):
+            return "period"
 
     # --------------------------------------------------------
     # 3. Metric 映射
