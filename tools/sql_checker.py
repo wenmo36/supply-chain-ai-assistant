@@ -38,3 +38,17 @@ def validate_sql(sql:str)->None:
         raise ValueError(
             "安全拦截：检测到禁止操作"
         )
+
+    reserved_alias = re.search(
+        r"\bAS\s+("
+        r"ORDER|GROUP|SELECT|FROM|WHERE|HAVING|LIMIT|JOIN|BY"
+        r")\b",
+        cleaned,
+        re.IGNORECASE
+    )
+
+    if reserved_alias:
+        raise ValueError(
+            "SQL 语法风险：禁止使用 MySQL 保留字作为未加引号的别名："
+            f"{reserved_alias.group(1)}"
+        )

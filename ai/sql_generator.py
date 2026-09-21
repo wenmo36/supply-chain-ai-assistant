@@ -153,6 +153,10 @@ SQL_SYSTEM_PROMPT = """
 23. 未收数量 ranking / filter 必须排除未收数量等于 0 的分组，
     优先通过 HAVING unreceived_qty > 0 实现。
 
+24. 禁止使用 MySQL 保留字作为别名，包括：
+    order、group、select、from、where、having、limit、join、by。
+    采购订单字段应直接使用 order_no，不要写 AS order。
+
 ====================
 业务语义优先于 SQL 简洁性
 ====================

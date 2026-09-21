@@ -21,6 +21,8 @@ MySQL
 import logging
 from time import perf_counter
 
+from mysql.connector import ProgrammingError
+
 from ai.intent import parse_intent
 from ai.chart_planner import build_chart_plan
 from ai.analysis_result import AnalysisResult
@@ -84,7 +86,29 @@ def run_analysis(question: str) -> AnalysisResult:
                 analysis_plan
             )
 
-            break
+            try:
+                rows = run_readonly_sql(sql)
+                break
+            except ProgrammingError as error:
+                repair_count += 1
+                logger.warning(
+                    "SQL execution failed; repair_attempt=%s; error=%s",
+                    repair_count,
+                    error,
+                )
+
+                if repair_count > MAX_REPAIR_ATTEMPTS:
+                    raise ValueError(
+                        "SQL 连续修复失败，系统拒绝继续执行。\n"
+                        f"最后一次数据库错误：{error}"
+                    ) from error
+
+                repaired = repair_sql(
+                    sql=sql,
+                    analysis_plan=analysis_plan,
+                    error_message=f"MySQL 执行错误：{error}",
+                )
+                sql = repaired["sql"]
 
         except ValueError as error:
 
@@ -109,12 +133,6 @@ def run_analysis(question: str) -> AnalysisResult:
             )
 
             sql = repaired["sql"]
-
-    # ==========================================
-    # 5. 通过全部检查后执行
-    # ==========================================
-
-    rows = run_readonly_sql(sql)
 
     chart_plan = build_chart_plan(
         analysis_plan

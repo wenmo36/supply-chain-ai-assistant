@@ -70,6 +70,21 @@ def test_drop_blocked():
         "❌ DROP未被拦截"
     )
 
+
+def test_reserved_alias_blocked():
+    sql = """
+    SELECT order_no AS order
+    FROM purchase_detail;
+    """
+
+    try:
+        validate_sql(sql)
+    except ValueError as error:
+        assert "保留字" in str(error)
+        return
+
+    raise Exception("❌ MySQL 保留字别名未被拦截")
+
 if __name__ == "__main__":
     print(
         "====== SQL安全测试 ======"

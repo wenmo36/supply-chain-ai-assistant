@@ -80,6 +80,8 @@ REPAIR_SYSTEM_PROMPT = """
 8. 只生成 MySQL SELECT / WITH 查询。
 9. 不允许 INSERT、UPDATE、DELETE、DROP、ALTER 等写操作。
 10. 输出 JSON，不输出 Markdown，不输出 ```sql。
+11. 禁止使用 MySQL 保留字作为未加引号的别名；
+    采购订单字段使用 order_no，不要使用 AS order。
 
 特别注意：
 
