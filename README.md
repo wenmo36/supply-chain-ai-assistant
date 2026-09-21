@@ -76,6 +76,8 @@ Copy-Item .env.example .env
 AI_API_KEY=your_api_key
 AI_BASE_URL=https://oa.api2d.net/v1
 AI_MODEL=your_model
+AI_TIMEOUT_SECONDS=60
+AI_MAX_RETRIES=1
 
 MYSQL_HOST=127.0.0.1
 MYSQL_PORT=3306
@@ -143,6 +145,7 @@ Remove-Item Env:RUN_INTEGRATION_TESTS
 ## 已知边界
 
 - 当前模型调用基于 Chat Completions 接口的 `response_format=json_schema`，所选服务与模型必须支持该能力。
+- AI 请求默认 60 秒超时并最多重试 1 次，可通过 `.env` 调整。
 - 中文图表字体优先使用 Windows 的微软雅黑、黑体或宋体；其他操作系统未安装中文字体时会给出提示。
 - V2 Schema 与关系校验依赖可访问的 MySQL 数据库元数据。
 - Power BI 暂不作为当前阶段的交付范围。

@@ -15,7 +15,9 @@ from openai import OpenAI
 from config.settings import (
     AI_API_KEY,
     AI_BASE_URL,
-    AI_MODEL
+    AI_MODEL,
+    AI_TIMEOUT_SECONDS,
+    AI_MAX_RETRIES
 )
 
 from database.schema import (
@@ -33,7 +35,9 @@ def _get_client() -> OpenAI:
 
     return OpenAI(
         api_key=AI_API_KEY,
-        base_url=AI_BASE_URL
+        base_url=AI_BASE_URL,
+        timeout=AI_TIMEOUT_SECONDS,
+        max_retries=AI_MAX_RETRIES
     )
 
 

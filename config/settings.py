@@ -19,6 +19,20 @@ AI_BASE_URL = os.getenv(
     "https://oa.api2d.net/v1"
 )
 
+AI_TIMEOUT_SECONDS = float(
+    os.getenv(
+        "AI_TIMEOUT_SECONDS",
+        "60"
+    )
+)
+
+AI_MAX_RETRIES = int(
+    os.getenv(
+        "AI_MAX_RETRIES",
+        "1"
+    )
+)
+
 
 MYSQL_CONFIG = {
 
