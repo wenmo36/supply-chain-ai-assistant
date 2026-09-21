@@ -327,4 +327,15 @@ def normalize_analysis_plan(
     ):
         plan["condition"] = "unreceived_qty > 0"
 
+    over_receipt_filter_cues = ("哪些", "哪些订单", "存在超收", "有超收")
+    ranking_cues = ("最高", "最多", "排名", "top", "前")
+    if (
+        plan.get("metric") == "over_receipt_qty"
+        and any(cue in compact_question for cue in over_receipt_filter_cues)
+        and not any(cue in compact_question.lower() for cue in ranking_cues)
+    ):
+        plan["intent"] = "filter"
+        plan["limit"] = None
+        plan["sort"] = None
+
     return plan

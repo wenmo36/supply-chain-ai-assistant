@@ -77,3 +77,21 @@ def test_unreceived_ranking_excludes_zero():
     )
 
     assert result["condition"] == "unreceived_qty > 0"
+
+
+def test_over_receipt_question_is_stable_filter():
+    result = normalize_analysis_plan(
+        _plan(
+            intent="ranking",
+            metric="over_receipt_qty",
+            dimension="order",
+            limit=10,
+            sort="desc",
+        ),
+        "哪些采购订单存在超收？",
+    )
+
+    assert result["intent"] == "filter"
+    assert result["dimension"] == "order"
+    assert result["limit"] is None
+    assert result["sort"] is None
