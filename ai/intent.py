@@ -91,8 +91,8 @@ INTENT_SCHEMA = {
             "enum": list(METRICS.keys())
         },
         "dimension": {
-            "type": "string",
-            "enum": list(DIMENSIONS.keys())
+            "type": ["string", "null"],
+            "enum": [*DIMENSIONS.keys(), None]
         },
         "limit": {
             "type": ["integer", "null"]
@@ -187,10 +187,13 @@ INTENT_SYSTEM_PROMPT = """
 - 不允许虚构不存在的指标或维度
 - 不确定的信息使用 null
 - 没有普通筛选条件时 filters 使用空数组
+- 纯总计、合计、多少等 summary 问题的 dimension 使用 null
+- “各供应商”“每种物料”“按订单”等分组问题使用 comparison
 - 日期范围必须拆分成 YYYY-MM-DD 格式的 date_from 和 date_to
 - “某年某月”应转换为该月第一天和最后一天
 - filters 只表达供应商、订单、物料和日期等普通字段筛选
 - 超收等指标条件仍放在 condition
+- 未收数量的 ranking / filter 默认 condition 为 unreceived_qty > 0
 - 不要输出 SQL
 - 不要输出解释文字
 - 必须严格输出 JSON
@@ -272,4 +275,33 @@ def parse_intent(question: str) -> dict:
     if not content:
         raise ValueError("AI 未返回 Analysis Plan")
 
-    return json.loads(content)
+    return normalize_analysis_plan(
+        json.loads(content),
+        question
+    )
+
+
+def normalize_analysis_plan(
+    analysis_plan: dict,
+    question: str
+) -> dict:
+    """Correct deterministic intent details without another model call."""
+
+    plan = dict(analysis_plan)
+    compact_question = "".join(question.split())
+    grouping_cues = ("各", "每个", "每家", "按供应商", "按物料", "按订单")
+
+    if plan.get("intent") == "summary":
+        if any(cue in compact_question for cue in grouping_cues):
+            plan["intent"] = "comparison"
+        else:
+            plan["dimension"] = None
+
+    if (
+        plan.get("metric") == "unreceived_qty"
+        and plan.get("intent") in {"ranking", "filter"}
+        and not plan.get("condition")
+    ):
+        plan["condition"] = "unreceived_qty > 0"
+
+    return plan

@@ -77,3 +77,44 @@ def test_date_range_cannot_be_omitted():
         """,
         plan,
     )
+
+
+def test_summary_without_dimension_rejects_grouping():
+    plan = {
+        "metric": "purchase_amount",
+        "intent": "summary",
+        "dimension": None,
+    }
+
+    with pytest.raises(ValueError, match="GROUP BY"):
+        validate_business_sql(
+            """
+            SELECT order_date,
+                   SUM(purchase_qty * unit_price) AS purchase_amount
+            FROM purchase_detail
+            GROUP BY order_date
+            """,
+            plan,
+        )
+
+
+def test_unreceived_ranking_rejects_zero_groups():
+    plan = {
+        "metric": "unreceived_qty",
+        "intent": "ranking",
+        "dimension": "material",
+    }
+
+    with pytest.raises(ValueError, match="排除 0"):
+        validate_business_sql(
+            """
+            SELECT material_code,
+                   SUM(GREATEST(purchase_qty - received_qty, 0))
+                       AS unreceived_qty
+            FROM purchase_detail
+            GROUP BY material_code
+            ORDER BY unreceived_qty DESC
+            LIMIT 5
+            """,
+            plan,
+        )

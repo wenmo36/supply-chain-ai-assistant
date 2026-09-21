@@ -134,8 +134,12 @@ def _check_extended_metric(
             )
 
     elif metric == "receipt_rate":
-        required = ("sum(", "received_qty", "purchase_qty", "nullif", "* 100")
-        if not all(token in normalized for token in required):
+        required = ("sum(", "received_qty", "purchase_qty", "nullif")
+        percentage_pattern = re.compile(r"\*\s*100(?:\.0+)?\b")
+        if (
+            not all(token in normalized for token in required)
+            or not percentage_pattern.search(normalized)
+        ):
             errors.append(
                 "收货率检查失败：必须使用汇总收料数量除以汇总采购数量，"
                 "并通过 NULLIF 防止除零"
@@ -217,6 +221,38 @@ def _check_plan_filters(
 
         if item.get("operator") == "contains" and " like " not in normalized:
             errors.append("筛选检查失败：contains 必须使用 LIKE")
+
+
+def _check_analysis_shape(
+    sql: str,
+    analysis_plan: dict,
+    errors: list[str]
+) -> None:
+    normalized = _normalize_sql(sql)
+    intent = analysis_plan.get("intent")
+    dimension = analysis_plan.get("dimension")
+    metric = analysis_plan.get("metric")
+
+    if intent == "summary" and dimension is None and "group by" in normalized:
+        errors.append("汇总检查失败：纯 summary 查询不应包含 GROUP BY")
+
+    if intent == "comparison" and dimension and "group by" not in normalized:
+        errors.append("对比检查失败：comparison 查询必须按照维度 GROUP BY")
+
+    if (
+        metric == "unreceived_qty"
+        and intent in {"ranking", "filter"}
+        and not (
+            ("having" in normalized and "> 0" in normalized)
+            or (
+                "where" in normalized
+                and "purchase_qty" in normalized
+                and "received_qty" in normalized
+                and ">" in normalized
+            )
+        )
+    ):
+        errors.append("未收数量检查失败：排名或筛选必须排除 0 值")
 
 
 def _check_purchase_grain(
@@ -410,6 +446,12 @@ def validate_business_sql(
     )
 
     _check_plan_filters(
+        sql,
+        analysis_plan,
+        errors
+    )
+
+    _check_analysis_shape(
         sql,
         analysis_plan,
         errors

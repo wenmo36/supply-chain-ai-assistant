@@ -14,6 +14,7 @@
 """
 
 from dataclasses import dataclass
+from datetime import date, datetime, time
 from decimal import Decimal
 from typing import Any
 
@@ -62,6 +63,9 @@ class AnalysisResult:
 
                 if isinstance(value, Decimal):
                     new_row[key] = float(value)
+
+                elif isinstance(value, (date, datetime, time)):
+                    new_row[key] = value.isoformat()
 
                 else:
                     new_row[key] = value

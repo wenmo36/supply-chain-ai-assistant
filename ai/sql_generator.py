@@ -145,6 +145,14 @@ SQL_SYSTEM_PROMPT = """
 20. 指标公式以 metrics 中的 sql_expression 为准，
     包括去重计数、未收数量、收货率和加权采购单价。
 
+21. summary 且 dimension 为 null 时，只返回一个汇总结果，
+    不得选择或 GROUP BY 日期、供应商、订单或物料字段。
+
+22. comparison 必须按照 dimension 分组。
+
+23. 未收数量 ranking / filter 必须排除未收数量等于 0 的分组，
+    优先通过 HAVING unreceived_qty > 0 实现。
+
 ====================
 业务语义优先于 SQL 简洁性
 ====================

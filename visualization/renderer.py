@@ -538,11 +538,27 @@ def _render_line_chart(
         result
     )
 
-    ax.plot(
-        labels,
-        values,
-        marker="o"
-    )
+    if len(labels) == 1:
+        ax.bar(
+            labels,
+            values,
+            color="#287EB8",
+            width=0.45
+        )
+        ax.text(
+            0,
+            values[0],
+            _format_value(values[0], result.chart_plan["y_axis"]),
+            ha="center",
+            va="bottom"
+        )
+    else:
+        ax.plot(
+            labels,
+            values,
+            marker="o",
+            color="#287EB8"
+        )
 
     ax.set_xlabel(
         _display_name(result.chart_plan["x_axis"])

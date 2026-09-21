@@ -1,0 +1,52 @@
+from ai.intent import normalize_analysis_plan
+
+
+def _plan(**overrides):
+    plan = {
+        "intent": "summary",
+        "metric": "purchase_amount",
+        "dimension": "order_date",
+        "limit": None,
+        "sort": None,
+        "time_granularity": None,
+        "period": None,
+        "condition": None,
+        "date_from": None,
+        "date_to": None,
+        "filters": [],
+    }
+    plan.update(overrides)
+    return plan
+
+
+def test_plain_summary_removes_forced_dimension():
+    result = normalize_analysis_plan(
+        _plan(date_from="2026-08-01", date_to="2026-08-31"),
+        "查询2026年8月采购金额",
+    )
+
+    assert result["intent"] == "summary"
+    assert result["dimension"] is None
+
+
+def test_each_supplier_becomes_comparison():
+    result = normalize_analysis_plan(
+        _plan(metric="receipt_rate", dimension="supplier"),
+        "各供应商的收货率",
+    )
+
+    assert result["intent"] == "comparison"
+    assert result["dimension"] == "supplier"
+
+
+def test_unreceived_ranking_excludes_zero():
+    result = normalize_analysis_plan(
+        _plan(
+            intent="ranking",
+            metric="unreceived_qty",
+            dimension="material",
+        ),
+        "未收数量最高的5种物料",
+    )
+
+    assert result["condition"] == "unreceived_qty > 0"
