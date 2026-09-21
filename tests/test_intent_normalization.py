@@ -29,6 +29,33 @@ def test_plain_summary_removes_forced_dimension():
     assert result["dimension"] is None
 
 
+def test_calendar_month_without_trend_word_is_summary():
+    result = normalize_analysis_plan(
+        _plan(
+            intent="trend",
+            time_granularity="month",
+            date_from="2026-08-01",
+            date_to="2026-08-31",
+        ),
+        "查询2026年8月采购金额",
+    )
+
+    assert result["intent"] == "summary"
+    assert result["dimension"] is None
+    assert result["time_granularity"] is None
+
+
+def test_explicit_monthly_trend_remains_trend():
+    result = normalize_analysis_plan(
+        _plan(intent="trend", time_granularity="month"),
+        "按月查看采购金额趋势",
+    )
+
+    assert result["intent"] == "trend"
+    assert result["dimension"] == "order_date"
+    assert result["time_granularity"] == "month"
+
+
 def test_each_supplier_becomes_comparison():
     result = normalize_analysis_plan(
         _plan(metric="receipt_rate", dimension="supplier"),

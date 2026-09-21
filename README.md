@@ -78,7 +78,7 @@ AI_BASE_URL=https://oa.api2d.net/v1
 AI_MODEL=your_model
 AI_TIMEOUT_SECONDS=60
 AI_MAX_RETRIES=1
-AI_MAX_OUTPUT_TOKENS=600
+AI_MAX_OUTPUT_TOKENS=1200
 
 MYSQL_HOST=127.0.0.1
 MYSQL_PORT=3306
@@ -156,7 +156,8 @@ pytest -q --run-integration --run-paid
 
 - 当前模型调用基于 Chat Completions 接口的 `response_format=json_schema`，所选服务与模型必须支持该能力。
 - AI 请求默认 60 秒超时并最多重试 1 次，可通过 `.env` 调整。
-- 模型输出默认限制为 600 tokens；图表规划已改为本地规则，不再额外调用模型。
+- 模型输出默认上限为 1200 tokens，优先保证复杂 SQL 和修复结果完整。
+- 图表规划使用稳定的本地业务规则，不依赖额外模型调用。
 - 中文图表字体优先使用 Windows 的微软雅黑、黑体或宋体；其他操作系统未安装中文字体时会给出提示。
 - V2 Schema 与关系校验依赖可访问的 MySQL 数据库元数据。
 - 日期范围会结构化为 `date_from` / `date_to`；趋势支持日、月、季度和年度粒度。

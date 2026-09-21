@@ -71,3 +71,35 @@ def test_over_receipt_orders():
     assert result.repair_count <= 2
 
     assert result.chart_plan["chart_type"] == "table"
+
+
+def test_month_range_purchase_amount_is_summary():
+    result = run_analysis("查询2026年8月采购金额")
+
+    assert result.analysis_plan["intent"] == "summary"
+    assert result.analysis_plan["dimension"] is None
+    assert result.analysis_plan["date_from"] == "2026-08-01"
+    assert result.analysis_plan["date_to"] == "2026-08-31"
+    assert "GROUP BY" not in result.sql.upper()
+    assert len(result.rows) == 1
+    assert float(result.rows[0]["purchase_amount"]) == 67300
+    assert result.chart_plan["chart_type"] == "card"
+
+
+def test_unreceived_material_ranking_excludes_zero():
+    result = run_analysis("未收数量最高的5种物料")
+
+    assert result.analysis_plan["metric"] == "unreceived_qty"
+    assert result.analysis_plan["condition"] == "unreceived_qty > 0"
+    assert result.rows
+    assert all(float(row["unreceived_qty"]) > 0 for row in result.rows)
+
+
+def test_supplier_receipt_rate_is_comparison():
+    result = run_analysis("各供应商的收货率")
+
+    assert result.analysis_plan["intent"] == "comparison"
+    assert result.analysis_plan["dimension"] == "supplier"
+    assert result.analysis_plan["metric"] == "receipt_rate"
+    assert "GROUP BY" in result.sql.upper()
+    assert result.chart_plan["chart_type"] == "column_chart"

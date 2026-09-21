@@ -290,6 +290,29 @@ def normalize_analysis_plan(
     plan = dict(analysis_plan)
     compact_question = "".join(question.split())
     grouping_cues = ("各", "每个", "每家", "按供应商", "按物料", "按订单")
+    trend_cues = (
+        "趋势",
+        "走势",
+        "变化",
+        "按日",
+        "按月",
+        "按季度",
+        "按年",
+        "每日",
+        "每月",
+        "每季度",
+        "每年",
+        "逐日",
+        "逐月",
+    )
+
+    if (
+        plan.get("intent") == "trend"
+        and not any(cue in compact_question for cue in trend_cues)
+    ):
+        plan["intent"] = "summary"
+        plan["dimension"] = None
+        plan["time_granularity"] = None
 
     if plan.get("intent") == "summary":
         if any(cue in compact_question for cue in grouping_cues):
