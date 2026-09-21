@@ -23,10 +23,13 @@ from semantic.metrics import METRICS
 from semantic.dimensions import DIMENSIONS
 
 
-client = OpenAI(
-    api_key=AI_API_KEY,
-    base_url=AI_BASE_URL
-)
+def _get_client() -> OpenAI:
+    """Create the API client only when a model call is required."""
+
+    return OpenAI(
+        api_key=AI_API_KEY,
+        base_url=AI_BASE_URL
+    )
 
 
 CHART_PLAN_SCHEMA = {
@@ -139,7 +142,7 @@ def build_chart_plan(
         "dimensions": DIMENSIONS
     }
 
-    response = client.chat.completions.create(
+    response = _get_client().chat.completions.create(
         model=AI_MODEL,
         messages=[
             {

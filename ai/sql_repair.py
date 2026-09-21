@@ -28,10 +28,13 @@ from semantic.dimensions import DIMENSIONS
 from semantic.business_rules import BUSINESS_RULES
 
 
-client = OpenAI(
-    api_key=AI_API_KEY,
-    base_url=AI_BASE_URL
-)
+def _get_client() -> OpenAI:
+    """Create the API client only when a model call is required."""
+
+    return OpenAI(
+        api_key=AI_API_KEY,
+        base_url=AI_BASE_URL
+    )
 
 
 REPAIR_SCHEMA = {
@@ -134,7 +137,7 @@ def repair_sql(
         "business_rules": BUSINESS_RULES
     }
 
-    response = client.chat.completions.create(
+    response = _get_client().chat.completions.create(
         model=AI_MODEL,
         messages=[
             {

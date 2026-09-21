@@ -32,7 +32,7 @@ from tools.sql_risk_checker import validate_business_sql
 MAX_REPAIR_ATTEMPTS = 2
 
 
-def run_analysis(question: str) -> dict:
+def run_analysis(question: str) -> AnalysisResult:
     """
     执行完整的 AI 数据分析流程。
 
@@ -105,14 +105,14 @@ def run_analysis(question: str) -> dict:
     rows = run_readonly_sql(sql)
 
     chart_plan = build_chart_plan(
-    analysis_plan
-)
+        analysis_plan
+    )
 
     return AnalysisResult(
-    question=question,
-    analysis_plan=analysis_plan,
-    sql=sql,
-    rows=rows,
-    chart_plan=chart_plan,
-    repair_count=repair_count
-)
+        question=question,
+        analysis_plan=analysis_plan,
+        sql=sql,
+        rows=rows,
+        chart_plan=chart_plan,
+        repair_count=repair_count
+    )
