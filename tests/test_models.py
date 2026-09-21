@@ -1,9 +1,13 @@
 from openai import OpenAI
+import pytest
 
 from config.settings import (
     AI_API_KEY,
     AI_BASE_URL
 )
+
+pytestmark = pytest.mark.paid_api
+
 
 def test_list_models():
     client = OpenAI(

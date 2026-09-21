@@ -33,6 +33,13 @@ AI_MAX_RETRIES = int(
     )
 )
 
+AI_MAX_OUTPUT_TOKENS = int(
+    os.getenv(
+        "AI_MAX_OUTPUT_TOKENS",
+        "600"
+    )
+)
+
 
 MYSQL_CONFIG = {
 

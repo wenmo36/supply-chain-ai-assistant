@@ -21,7 +21,8 @@ from config.settings import (
     AI_BASE_URL,
     AI_MODEL,
     AI_TIMEOUT_SECONDS,
-    AI_MAX_RETRIES
+    AI_MAX_RETRIES,
+    AI_MAX_OUTPUT_TOKENS
 )
 
 from semantic.metrics import METRICS
@@ -98,14 +99,25 @@ def _build_context() -> str:
     将当前语义层信息整理成 AI 的上下文。
     """
 
+    metrics = {
+        key: {
+            "name": value["name"],
+            "description": value["description"],
+        }
+        for key, value in METRICS.items()
+    }
+    dimensions = {
+        key: {"name": value["name"], "type": value["type"]}
+        for key, value in DIMENSIONS.items()
+    }
     return json.dumps(
         {
-            "metrics": METRICS,
-            "dimensions": DIMENSIONS,
-            "glossary": GLOSSARY
+            "metrics": metrics,
+            "dimensions": dimensions,
+            "glossary": GLOSSARY,
         },
         ensure_ascii=False,
-        indent=2
+        separators=(",", ":"),
     )
 
 
@@ -194,7 +206,8 @@ def parse_intent(question: str) -> dict:
                 "schema": INTENT_SCHEMA
             }
         },
-        temperature=0
+        temperature=0,
+        max_completion_tokens=AI_MAX_OUTPUT_TOKENS
     )
 
     content = response.choices[0].message.content

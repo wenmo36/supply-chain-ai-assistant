@@ -78,6 +78,7 @@ AI_BASE_URL=https://oa.api2d.net/v1
 AI_MODEL=your_model
 AI_TIMEOUT_SECONDS=60
 AI_MAX_RETRIES=1
+AI_MAX_OUTPUT_TOKENS=600
 
 MYSQL_HOST=127.0.0.1
 MYSQL_PORT=3306
@@ -123,29 +124,35 @@ python main.py
 
 ## 测试
 
-默认运行不需要真实 API 或 MySQL 的单元测试：
+默认仅运行离线单元测试，不连接 MySQL，也不会消耗 API 点数：
 
 ```powershell
 pytest -q
 ```
 
-需要验证 AI API、MySQL 和完整 Agent 时，先正确配置 `.env`，再运行：
+仅运行本地 MySQL 集成测试：
 
 ```powershell
-$env:RUN_INTEGRATION_TESTS = "1"
-pytest -q
+pytest -q --run-integration
 ```
 
-结束后可清除临时开关：
+仅运行付费 API 冒烟测试：
 
 ```powershell
-Remove-Item Env:RUN_INTEGRATION_TESTS
+pytest -q --run-paid
+```
+
+完整端到端测试会访问 MySQL 并消耗 API 点数，必须同时显式启用：
+
+```powershell
+pytest -q --run-integration --run-paid
 ```
 
 ## 已知边界
 
 - 当前模型调用基于 Chat Completions 接口的 `response_format=json_schema`，所选服务与模型必须支持该能力。
 - AI 请求默认 60 秒超时并最多重试 1 次，可通过 `.env` 调整。
+- 模型输出默认限制为 600 tokens；图表规划已改为本地规则，不再额外调用模型。
 - 中文图表字体优先使用 Windows 的微软雅黑、黑体或宋体；其他操作系统未安装中文字体时会给出提示。
 - V2 Schema 与关系校验依赖可访问的 MySQL 数据库元数据。
 - Power BI 暂不作为当前阶段的交付范围。

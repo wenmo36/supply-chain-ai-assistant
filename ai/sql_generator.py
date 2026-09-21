@@ -21,7 +21,8 @@ from config.settings import (
     AI_BASE_URL,
     AI_MODEL,
     AI_TIMEOUT_SECONDS,
-    AI_MAX_RETRIES
+    AI_MAX_RETRIES,
+    AI_MAX_OUTPUT_TOKENS
 )
 
 from database.schema import get_schema
@@ -155,7 +156,7 @@ def _build_context(analysis_plan: dict) -> str:
     return json.dumps(
         context,
         ensure_ascii=False,
-        indent=2,
+        separators=(",", ":"),
         default=str
     )
 
@@ -194,7 +195,8 @@ def generate_sql(analysis_plan: dict) -> str:
                 "schema": SQL_SCHEMA
             }
         },
-        temperature=0
+        temperature=0,
+        max_completion_tokens=AI_MAX_OUTPUT_TOKENS
     )
 
     content = response.choices[0].message.content

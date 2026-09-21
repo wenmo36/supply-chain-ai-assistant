@@ -17,7 +17,8 @@ from config.settings import (
     AI_BASE_URL,
     AI_MODEL,
     AI_TIMEOUT_SECONDS,
-    AI_MAX_RETRIES
+    AI_MAX_RETRIES,
+    AI_MAX_OUTPUT_TOKENS
 )
 
 from database.schema import (
@@ -153,7 +154,7 @@ def repair_sql(
                 "content": json.dumps(
                     context,
                     ensure_ascii=False,
-                    indent=2,
+                    separators=(",", ":"),
                     default=str
                 )
             }
@@ -166,7 +167,8 @@ def repair_sql(
                 "schema": REPAIR_SCHEMA
             }
         },
-        temperature=0
+        temperature=0,
+        max_completion_tokens=AI_MAX_OUTPUT_TOKENS
     )
 
     content = response.choices[0].message.content

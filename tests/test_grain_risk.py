@@ -13,6 +13,9 @@ from database.schema import get_relationships
 from tools.sql_risk_checker import validate_business_sql
 
 
+pytestmark = pytest.mark.integration
+
+
 def test_receipt_detail_is_n_to_one():
     """
     验证数据库存在：

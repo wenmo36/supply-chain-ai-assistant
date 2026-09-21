@@ -18,6 +18,9 @@ SQL Repair（失败时）
 MySQL
 """
 
+import logging
+from time import perf_counter
+
 from ai.intent import parse_intent
 from ai.chart_planner import build_chart_plan
 from ai.analysis_result import AnalysisResult
@@ -30,6 +33,7 @@ from tools.sql_risk_checker import validate_business_sql
 
 
 MAX_REPAIR_ATTEMPTS = 2
+logger = logging.getLogger(__name__)
 
 
 def run_analysis(question: str) -> AnalysisResult:
@@ -48,6 +52,9 @@ def run_analysis(question: str) -> AnalysisResult:
 
     if not question or not question.strip():
         raise ValueError("分析问题不能为空")
+
+    started_at = perf_counter()
+    logger.info("Analysis started; question_length=%s", len(question.strip()))
 
     # ==========================================
     # 1. 自然语言 → Analysis Plan
@@ -82,6 +89,11 @@ def run_analysis(question: str) -> AnalysisResult:
         except ValueError as error:
 
             repair_count += 1
+            logger.warning(
+                "SQL validation failed; repair_attempt=%s; error=%s",
+                repair_count,
+                error,
+            )
 
             if repair_count > MAX_REPAIR_ATTEMPTS:
                 raise ValueError(
@@ -108,7 +120,7 @@ def run_analysis(question: str) -> AnalysisResult:
         analysis_plan
     )
 
-    return AnalysisResult(
+    result = AnalysisResult(
         question=question,
         analysis_plan=analysis_plan,
         sql=sql,
@@ -116,3 +128,11 @@ def run_analysis(question: str) -> AnalysisResult:
         chart_plan=chart_plan,
         repair_count=repair_count
     )
+
+    logger.info(
+        "Analysis completed; rows=%s; repairs=%s; elapsed_seconds=%.2f",
+        len(rows),
+        repair_count,
+        perf_counter() - started_at,
+    )
+    return result

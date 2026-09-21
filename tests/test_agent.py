@@ -6,7 +6,12 @@ V2 Analysis Agent 测试
 2. 采购订单超收
 """
 
+import pytest
+
 from ai.agent import run_analysis
+
+
+pytestmark = pytest.mark.e2e
 
 
 def test_supplier_purchase_top5():

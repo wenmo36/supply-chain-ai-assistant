@@ -1,4 +1,8 @@
 from database.mysql import get_connection
+import pytest
+
+
+pytestmark = pytest.mark.integration
 
 def test_mysql_connection():
 

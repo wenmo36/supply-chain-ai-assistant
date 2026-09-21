@@ -35,6 +35,7 @@ matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
 from matplotlib import font_manager
+from matplotlib.ticker import StrMethodFormatter
 
 from ai.analysis_result import AnalysisResult
 from semantic.dimensions import DIMENSIONS
@@ -97,6 +98,46 @@ def _configure_chinese_font() -> str | None:
 
 
 CHINESE_FONT = _configure_chinese_font()
+
+FIELD_LABELS = {
+    "supplier_id": "供应商ID",
+    "supplier_name": "供应商",
+    "order_no": "采购订单号",
+    "order_date": "采购日期",
+    "material_code": "物料编码",
+    "material_name": "物料名称",
+    "warehouse_date": "入库日期",
+    "receipt_date": "收货日期",
+}
+
+
+def _display_name(semantic_or_column: str | None) -> str:
+    """Resolve a semantic key or SQL column to a Chinese business label."""
+
+    if not semantic_or_column:
+        return ""
+    if semantic_or_column in METRICS:
+        return METRICS[semantic_or_column]["name"]
+    if semantic_or_column in DIMENSIONS:
+        return DIMENSIONS[semantic_or_column]["name"]
+    return FIELD_LABELS.get(semantic_or_column, semantic_or_column)
+
+
+def _format_value(value: Any, semantic_name: str | None = None) -> str:
+    """Format a value for business-facing labels."""
+
+    if not isinstance(value, (int, float)):
+        return str(value)
+
+    unit = METRICS.get(semantic_name or "", {}).get("unit")
+    decimals = 2 if isinstance(value, float) and not value.is_integer() else 0
+    formatted = f"{value:,.{decimals}f}"
+
+    if unit == "元":
+        return f"¥{formatted}"
+    if unit and unit != "数量":
+        return f"{formatted} {unit}"
+    return formatted
 
 
 def get_font_status() -> str:
@@ -313,7 +354,7 @@ def _build_output_path(
 
 def _create_figure(
     result: AnalysisResult,
-    figsize: tuple[int, int] = (10, 6)
+    figsize: tuple[int, int] = (9, 5.5)
 ):
     """
     创建统一 Figure / Axes。
@@ -327,8 +368,13 @@ def _create_figure(
         result.chart_plan.get(
             "title",
             ""
-        )
+        ),
+        fontsize=15,
+        pad=14
     )
+
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
 
     return fig, ax
 
@@ -352,16 +398,24 @@ def _render_bar_chart(
 
     ax.barh(
         labels,
-        values
+        values,
+        color="#287EB8"
     )
 
     ax.set_xlabel(
-        result.chart_plan["y_axis"]
+        _display_name(result.chart_plan["y_axis"])
     )
 
     ax.set_ylabel(
-        result.chart_plan["x_axis"]
+        _display_name(result.chart_plan["x_axis"])
     )
+
+    ax.xaxis.set_major_formatter(StrMethodFormatter("{x:,.0f}"))
+    ax.grid(axis="x", alpha=0.2)
+    ax.set_axisbelow(True)
+
+    if result.chart_plan.get("sort") == "desc":
+        ax.invert_yaxis()
 
     if result.chart_plan.get(
         "show_data_labels",
@@ -372,7 +426,7 @@ def _render_bar_chart(
             ax.text(
                 value,
                 index,
-                f" {value}",
+                f"  {_format_value(value, result.chart_plan['y_axis'])}",
                 va="center"
             )
 
@@ -408,16 +462,21 @@ def _render_column_chart(
 
     ax.bar(
         labels,
-        values
+        values,
+        color="#287EB8"
     )
 
     ax.set_xlabel(
-        result.chart_plan["x_axis"]
+        _display_name(result.chart_plan["x_axis"])
     )
 
     ax.set_ylabel(
-        result.chart_plan["y_axis"]
+        _display_name(result.chart_plan["y_axis"])
     )
+
+    ax.yaxis.set_major_formatter(StrMethodFormatter("{x:,.0f}"))
+    ax.grid(axis="y", alpha=0.2)
+    ax.set_axisbelow(True)
 
     ax.tick_params(
         axis="x",
@@ -433,7 +492,7 @@ def _render_column_chart(
             ax.text(
                 index,
                 value,
-                f"{value}",
+                _format_value(value, result.chart_plan["y_axis"]),
                 ha="center",
                 va="bottom"
             )
@@ -475,12 +534,16 @@ def _render_line_chart(
     )
 
     ax.set_xlabel(
-        result.chart_plan["x_axis"]
+        _display_name(result.chart_plan["x_axis"])
     )
 
     ax.set_ylabel(
-        result.chart_plan["y_axis"]
+        _display_name(result.chart_plan["y_axis"])
     )
+
+    ax.yaxis.set_major_formatter(StrMethodFormatter("{x:,.0f}"))
+    ax.grid(axis="y", alpha=0.2)
+    ax.set_axisbelow(True)
 
     ax.tick_params(
         axis="x",
@@ -511,9 +574,9 @@ def _render_table(
 
     rows = result.rows
 
-    fig, ax = plt.subplots(
-        figsize=(10, 4)
-    )
+    row_count = max(len(rows), 1)
+    fig_height = min(max(2.2 + row_count * 0.45, 3.2), 10)
+    fig, ax = plt.subplots(figsize=(9, fig_height))
 
     ax.axis("off")
 
@@ -524,14 +587,15 @@ def _render_table(
 
     else:
 
-        headers = list(
+        columns = list(
             rows[0].keys()
         )
+        headers = [_display_name(column) for column in columns]
 
         data = [
             [
-                row.get(column)
-                for column in headers
+                _format_value(row.get(column), column)
+                for column in columns
             ]
             for row in rows
         ]
@@ -539,7 +603,8 @@ def _render_table(
     table = ax.table(
         cellText=data,
         colLabels=headers,
-        loc="center"
+        loc="center",
+        cellLoc="center"
     )
 
     table.auto_set_font_size(
@@ -552,8 +617,15 @@ def _render_table(
 
     table.scale(
         1,
-        1.5
+        1.4
     )
+
+    for (row, _column), cell in table.get_celld().items():
+        if row == 0:
+            cell.set_facecolor("#287EB8")
+            cell.set_text_props(color="white", weight="bold")
+        elif row % 2 == 0:
+            cell.set_facecolor("#F3F6F8")
 
     ax.set_title(
         result.chart_plan.get(
@@ -617,7 +689,7 @@ def _render_card(
     ax.text(
         0.5,
         0.5,
-        str(value),
+        _format_value(value, result.analysis_plan.get("metric")),
         ha="center",
         va="center",
         fontsize=32

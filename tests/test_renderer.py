@@ -12,10 +12,20 @@ Visualization Renderer 测试
 from ai.analysis_result import AnalysisResult
 
 from visualization.renderer import (
+    _display_name,
+    _format_value,
     _resolve_column,
     get_font_status,
     render
 )
+
+
+def test_business_labels_and_number_formatting():
+    assert _display_name("supplier") == "供应商"
+    assert _display_name("order_no") == "采购订单号"
+    assert _display_name("purchase_amount") == "采购金额"
+    assert _format_value(23300.0, "purchase_amount") == "¥23,300"
+    assert _format_value(20.0, "over_receipt_qty") == "20"
 
 
 def test_chinese_font_configured():

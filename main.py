@@ -1,10 +1,15 @@
 import json
+import logging
 
 from ai.agent import run_analysis
+from config.logging_config import configure_logging
+from errors import format_user_error
 from visualization.renderer import render
 
 
 def main():
+    configure_logging()
+    logger = logging.getLogger(__name__)
     print("==============================")
     print("供应链 AI 数据分析助手 V2")
     print("输入 exit 退出")
@@ -49,7 +54,9 @@ def main():
                 print("查询结果为空，未生成图表。")
 
         except Exception as e:
-            print("\n错误:", e)
+            logger.exception("Analysis failed")
+            print("\n错误:", format_user_error(e))
+            print("详细日志：logs/app.log")
 
 
 if __name__ == "__main__":
