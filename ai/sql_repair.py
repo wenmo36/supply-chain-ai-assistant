@@ -89,6 +89,8 @@ REPAIR_SYSTEM_PROMPT = """
 14. 收货率必须保留
     SUM(received_qty) / NULLIF(SUM(purchase_qty), 0) * 100
     的安全除零公式。
+15. 禁止把供应商级 over_receipt_qty 聚合结果回连到 purchase_detail
+    后再次 SUM；应在 supplier_id 粒度直接 JOIN 各个汇总结果。
 
 特别注意：
 

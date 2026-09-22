@@ -110,6 +110,9 @@ SQL_SYSTEM_PROMPT = """
    - 如果按供应商、物料等其他维度比较，必须在目标维度汇总安全的
      超收差额，或先完成订单级聚合后再汇总到目标维度；不要强制把
      order_no 暴露为最终分组字段。
+   - 不要把供应商级 over_receipt_qty 聚合结果回连到 purchase_detail
+     后再次 SUM，否则会按明细行数重复累计。应将各个供应商级 CTE
+     直接按 supplier_id JOIN。
 
 10. 只允许 SELECT 或 WITH 开头的查询。
 

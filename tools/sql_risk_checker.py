@@ -133,6 +133,31 @@ def _check_over_receipt_at_dimension(
         )
 
 
+def _check_repeated_over_receipt_aggregate(
+    sql: str,
+    errors: list[str],
+) -> None:
+    """Block a supplier-level aggregate being summed after joining to detail.
+
+    A query such as ``SUM(COALESCE(over_receipt.over_receipt_qty, 0))`` after
+    joining the supplier aggregate back to ``purchase_detail`` multiplies the
+    supplier value by its number of detail rows.  The two aggregates must be
+    joined at the same supplier grain instead.
+    """
+
+    normalized = _normalize_sql(sql)
+    repeated_join_pattern = re.compile(
+        r"sum\s*\(\s*(?:coalesce\s*\(\s*)?"
+        r"(?:\w+\.)?over_receipt_qty",
+        re.IGNORECASE,
+    )
+    if "over_receipt" in normalized and repeated_join_pattern.search(normalized):
+        errors.append(
+            "超收检查失败：供应商级超收聚合不能回连采购明细后再次 SUM，"
+            "必须与供应商汇总结果在 supplier_id 粒度直接 JOIN"
+        )
+
+
 def _check_extended_metric(
     sql: str,
     metric: str,
@@ -467,6 +492,7 @@ def validate_business_sql(
                 _check_over_receipt(sql, errors)
             else:
                 _check_over_receipt_at_dimension(sql, errors)
+            _check_repeated_over_receipt_aggregate(sql, errors)
         else:
             _check_extended_metric(sql, metric_key, errors)
 

@@ -142,3 +142,35 @@ def test_over_receipt_supplier_comparison_does_not_require_order_grouping():
         """,
         plan,
     )
+
+
+def test_supplier_over_receipt_aggregate_cannot_be_summed_after_detail_join():
+    plan = {
+        "intent": "comparison",
+        "metric": "purchase_amount",
+        "metrics": ["purchase_amount", "receipt_rate", "over_receipt_qty"],
+        "dimension": "supplier",
+    }
+
+    with pytest.raises(ValueError, match="回连采购明细|重复"):
+        validate_business_sql(
+            """
+            SELECT pd.supplier_id,
+                   SUM(pd.purchase_qty * pd.unit_price) AS purchase_amount,
+                   SUM(pd.received_qty) /
+                       NULLIF(SUM(pd.purchase_qty), 0) * 100 AS receipt_rate,
+                   SUM(COALESCE(over_receipt.over_receipt_qty, 0))
+                       AS over_receipt_qty
+            FROM purchase_detail pd
+            LEFT JOIN (
+                SELECT supplier_id,
+                       SUM(received_qty) - SUM(purchase_qty)
+                           AS over_receipt_qty
+                FROM purchase_detail
+                GROUP BY supplier_id
+            ) over_receipt
+              ON over_receipt.supplier_id = pd.supplier_id
+            GROUP BY pd.supplier_id
+            """,
+            plan,
+        )
