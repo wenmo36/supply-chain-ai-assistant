@@ -10,6 +10,7 @@
         "Y": {"projections": [{"field": {"Measure": {"Expression": {"SourceRef": {"Entity": "supply_chain_ai purchase_detail"}}, "Property": "采购金额"}}, "queryRef": "supply_chain_ai purchase_detail.采购金额"}]}
       }
     },
+    "objects": {"valueAxis": [{"properties": {"displayUnits": {"expr": {"Literal": {"Value": "1D"}}}}}]},
     "visualContainerObjects": {"title": [{"properties": {"text": {"expr": {"Literal": {"Value": "'供应商采购金额'"}}}, "show": {"expr": {"Literal": {"Value": "true"}}}}}]},
     "drillFilterOtherVisuals": true
   }
