@@ -17,6 +17,7 @@ from visualization.renderer import (
     _display_name,
     _format_value,
     _resolve_column,
+    _sort_table_rows,
     get_font_status,
     render
 )
@@ -203,3 +204,31 @@ def test_single_point_line_chart_does_not_fallback_to_bar(tmp_path):
 
     assert output_path.exists()
     assert output_path.suffix == ".png"
+
+
+def test_filter_detail_table_sorts_by_exception_quantity_descending():
+    result = AnalysisResult(
+        question="查询存在超收的采购订单",
+        analysis_plan={
+            "intent": "filter",
+            "metric": "over_receipt_qty",
+            "dimension": "order",
+            "sort": None,
+        },
+        sql="SELECT order_no, over_receipt_qty FROM purchase_detail",
+        rows=[
+            {"order_no": "CG752610", "over_receipt_qty": 20.0},
+            {"order_no": "CG752614", "over_receipt_qty": 50.0},
+        ],
+        chart_plan={
+            "chart_type": "table",
+            "title": "超收数量明细",
+            "x_axis": None,
+            "y_axis": None,
+            "sort": None,
+        },
+    )
+
+    rows = _sort_table_rows(result)
+
+    assert [row["order_no"] for row in rows] == ["CG752614", "CG752610"]

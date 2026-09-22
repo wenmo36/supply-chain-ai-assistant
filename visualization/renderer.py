@@ -596,7 +596,7 @@ def _render_table(
     output_path: Path
 ) -> Path:
 
-    rows = result.rows
+    rows = _sort_table_rows(result)
 
     row_count = max(len(rows), 1)
     fig_height = min(max(2.2 + row_count * 0.45, 3.2), 10)
@@ -669,6 +669,36 @@ def _render_table(
     plt.close(fig)
 
     return output_path
+
+
+def _sort_table_rows(result: AnalysisResult) -> list[dict[str, Any]]:
+    """Keep local detail tables aligned with the Power BI sort definition."""
+
+    rows = list(result.rows)
+    chart_type = result.chart_plan.get("chart_type")
+    intent = result.analysis_plan.get("intent")
+    if chart_type != "table" or intent not in {"filter", "ranking", "comparison"}:
+        return rows
+
+    metric_key = (
+        result.chart_plan.get("y_axis")
+        or result.analysis_plan.get("metric")
+    )
+    if not metric_key or not any(metric_key in row for row in rows):
+        return rows
+
+    sort_direction = (
+        result.chart_plan.get("sort")
+        or result.analysis_plan.get("sort")
+        or "desc"
+    )
+    reverse = str(sort_direction).lower() == "desc"
+
+    def sort_key(row: dict[str, Any]) -> tuple[bool, Any]:
+        value = row.get(metric_key)
+        return value is None, value
+
+    return sorted(rows, key=sort_key, reverse=reverse)
 
 
 # ============================================================
