@@ -29,15 +29,16 @@ def build_chart_plan(analysis_plan: dict) -> dict:
     dimension_name = _semantic_name(DIMENSIONS, dimension, "维度")
 
     # A single-axis chart cannot faithfully communicate several measures with
-    # different units (for example amount, percentage, and quantity).  Use a
-    # matrix table for that case so the local PNG and Power BI render the same
-    # complete result set.
+    # different units (for example amount, percentage, and quantity). Use a
+    # composite visual: a primary metric chart plus a complete matrix table.
+    # The primary metric remains explicit so local PNG and Power BI use the
+    # same chart data sequence.
     if len(metrics) > 1 and dimension:
         metric_names = "、".join(
             _semantic_name(METRICS, key, key) for key in metrics
         )
         return {
-            "chart_type": "table",
+            "chart_type": "multi_metric",
             "title": f"{dimension_name}{metric_names}对比",
             "x_axis": dimension,
             "y_axis": metrics[0],

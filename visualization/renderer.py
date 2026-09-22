@@ -21,6 +21,8 @@
 - card
 """
 
+import os
+import shutil
 from pathlib import Path
 from typing import Any
 
@@ -46,8 +48,14 @@ from semantic.metrics import METRICS
 # 基础配置
 # ============================================================
 
-OUTPUT_DIR = Path("output")
+OUTPUT_DIR = Path(
+    os.getenv(
+        "AI_OUTPUT_DIR",
+        str(Path(__file__).resolve().parents[1] / "output"),
+    )
+)
 OUTPUT_DIR.mkdir(exist_ok=True)
+LATEST_OUTPUT_PATH = OUTPUT_DIR / "latest_analysis.png"
 
 
 # ============================================================
@@ -671,13 +679,83 @@ def _render_table(
     return output_path
 
 
+def _render_multi_metric(
+    result: AnalysisResult,
+    output_path: Path,
+) -> Path:
+    """Render a primary comparison chart and the complete metric table."""
+
+    rows = _sort_table_rows(result)
+    if not rows:
+        raise ValueError("查询结果为空，无法生成多指标图表")
+
+    x_column = _resolve_column(rows, result.chart_plan["x_axis"])
+    y_column = _resolve_column(rows, result.chart_plan["y_axis"])
+    labels = [str(row[x_column]) for row in rows]
+    values = [row[y_column] for row in rows]
+    columns = list(rows[0].keys())
+    headers = [_display_name(column) for column in columns]
+    data = [
+        [_format_value(row.get(column), column) for column in columns]
+        for row in rows
+    ]
+
+    fig = plt.figure(figsize=(11, 8))
+    grid = fig.add_gridspec(2, 1, height_ratios=[1.15, 1], hspace=0.38)
+
+    chart_ax = fig.add_subplot(grid[0])
+    chart_ax.barh(labels, values, color="#287EB8")
+    chart_ax.set_title(
+        f"{_display_name(result.chart_plan['y_axis'])}对比",
+        fontsize=13,
+        pad=10,
+    )
+    chart_ax.set_xlabel(_display_name(result.chart_plan["y_axis"]))
+    chart_ax.set_ylabel(_display_name(result.chart_plan["x_axis"]))
+    chart_ax.xaxis.set_major_formatter(StrMethodFormatter("{x:,.0f}"))
+    chart_ax.grid(axis="x", alpha=0.2)
+    chart_ax.set_axisbelow(True)
+    if result.chart_plan.get("sort") == "desc":
+        chart_ax.invert_yaxis()
+    for index, value in enumerate(values):
+        chart_ax.text(
+            value,
+            index,
+            f"  {_format_value(value, result.chart_plan['y_axis'])}",
+            va="center",
+        )
+
+    table_ax = fig.add_subplot(grid[1])
+    table_ax.axis("off")
+    table = table_ax.table(
+        cellText=data,
+        colLabels=headers,
+        loc="center",
+        cellLoc="center",
+    )
+    table.auto_set_font_size(False)
+    table.set_fontsize(10)
+    table.scale(1, 1.4)
+    for (row, _column), cell in table.get_celld().items():
+        if row == 0:
+            cell.set_facecolor("#287EB8")
+            cell.set_text_props(color="white", weight="bold")
+        elif row % 2 == 0:
+            cell.set_facecolor("#F3F6F8")
+    table_ax.set_title(f"{result.chart_plan.get('title', '')}（明细）", pad=8)
+    fig.suptitle(result.chart_plan.get("title", "多指标对比"), fontsize=15)
+    fig.savefig(output_path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    return output_path
+
+
 def _sort_table_rows(result: AnalysisResult) -> list[dict[str, Any]]:
     """Keep local detail tables aligned with the Power BI sort definition."""
 
     rows = list(result.rows)
     chart_type = result.chart_plan.get("chart_type")
     intent = result.analysis_plan.get("intent")
-    if chart_type != "table" or intent not in {"filter", "ranking", "comparison"}:
+    if chart_type not in {"table", "multi_metric"} or intent not in {"filter", "ranking", "comparison"}:
         return rows
 
     metric_key = (
@@ -778,6 +856,7 @@ RENDERERS = {
     "column_chart": _render_column_chart,
     "line_chart": _render_line_chart,
     "table": _render_table,
+    "multi_metric": _render_multi_metric,
     "card": _render_card
 }
 
@@ -823,7 +902,9 @@ def render(
         chart_type
     ]
 
-    return renderer(
+    rendered_path = renderer(
         result,
         output_path
     )
+    shutil.copyfile(rendered_path, LATEST_OUTPUT_PATH)
+    return rendered_path

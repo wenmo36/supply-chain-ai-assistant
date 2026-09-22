@@ -27,7 +27,7 @@ from config.settings import (
 from errors import format_user_error
 from integrations.powerbi_adapter import write_powerbi_payload
 from integrations.powerbi_report_builder import build_ai_page_from_payload
-from visualization.renderer import render
+from visualization.renderer import LATEST_OUTPUT_PATH, render
 
 
 def run_once(question: str):
@@ -49,6 +49,7 @@ def run_once(question: str):
     if result.rows:
         chart_path = render(result)
         print(f"PNG 图表已生成：{chart_path.resolve()}")
+        print(f"最新 PNG 副本：{LATEST_OUTPUT_PATH.resolve()}")
     else:
         print("查询结果为空，未生成 PNG 图表。")
 

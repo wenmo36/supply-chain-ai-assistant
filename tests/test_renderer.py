@@ -169,6 +169,54 @@ def test_table_render():
     assert path.suffix.lower() == ".png"
 
 
+def test_multi_metric_render_contains_chart_and_detail_table():
+    result = AnalysisResult(
+        question="按供应商比较采购金额、收货率和未收数量",
+        analysis_plan={
+            "intent": "comparison",
+            "metric": "purchase_amount",
+            "metrics": [
+                "purchase_amount",
+                "receipt_rate",
+                "unreceived_qty",
+            ],
+            "dimension": "supplier",
+        },
+        sql="SELECT ...",
+        rows=[
+            {
+                "supplier_name": "供应商A",
+                "purchase_amount": 1000,
+                "receipt_rate": 80,
+                "unreceived_qty": 20,
+            },
+            {
+                "supplier_name": "供应商B",
+                "purchase_amount": 800,
+                "receipt_rate": 100,
+                "unreceived_qty": 0,
+            },
+        ],
+        chart_plan={
+            "chart_type": "multi_metric",
+            "title": "供应商采购金额、收货率、未收数量对比",
+            "x_axis": "supplier",
+            "y_axis": "purchase_amount",
+            "y_axes": [
+                "purchase_amount",
+                "receipt_rate",
+                "unreceived_qty",
+            ],
+            "sort": "desc",
+        },
+    )
+
+    path = render(result)
+
+    assert path.exists()
+    assert path.suffix.lower() == ".png"
+
+
 def test_single_point_line_chart_does_not_fallback_to_bar(tmp_path):
     """A one-period trend remains a line chart in the local PNG."""
 

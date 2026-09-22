@@ -134,7 +134,7 @@ def test_multi_metric_comparison_builds_all_value_projections(tmp_path):
             "sort": "desc",
         },
         "chart_plan": {
-            "chart_type": "table",
+            "chart_type": "multi_metric",
             "title": "供应商采购金额、收货率、未收数量对比",
             "x_axis": "supplier",
             "y_axis": "purchase_amount",
@@ -160,9 +160,15 @@ def test_multi_metric_comparison_builds_all_value_projections(tmp_path):
             encoding="utf-8"
         )
     )
-    values = primary["visual"]["query"]["queryState"]["Values"]["projections"]
+    table = json.loads(
+        (page_path / "visuals" / "f0a1b2c3d4e7" / "visual.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    values = table["visual"]["query"]["queryState"]["Values"]["projections"]
 
-    assert primary["visual"]["visualType"] == "pivotTable"
+    assert primary["visual"]["visualType"] == "barChart"
+    assert table["visual"]["visualType"] == "pivotTable"
     assert [item["queryRef"] for item in values] == [
         "supply_chain_ai purchase_detail.采购金额",
         "supply_chain_ai purchase_detail.收货率",

@@ -107,7 +107,34 @@ def build_ai_page_from_payload(
             if str(plan.get("sort") or "desc").lower() == "desc"
             else "Ascending"
         )
-        if chart_plan.get("chart_type") == "table":
+        if chart_plan.get("chart_type") == "multi_metric":
+            chart_document = _build_dimension_chart(
+                chart_plan=chart_plan,
+                title=page_title,
+                dimension=dimension_binding,
+                metric=metric_binding,
+                rows=rows,
+                sort_order=sort_order,
+                position={"x": 40, "y": 40, "z": 0, "width": 1840, "height": 440},
+            )
+            table_document = _build_dimension_table(
+                visual_id=AI_TABLE_VISUAL_ID,
+                position={"x": 40, "y": 520, "z": 0, "width": 1840, "height": 480},
+                title=page_title,
+                dimension=dimension_binding,
+                metrics=metric_bindings,
+                rows=rows,
+                sort_order=sort_order,
+            )
+            _write_json(
+                visuals_root / AI_CHART_VISUAL_ID / "visual.json",
+                chart_document,
+            )
+            _write_json(
+                visuals_root / AI_TABLE_VISUAL_ID / "visual.json",
+                table_document,
+            )
+        elif chart_plan.get("chart_type") == "table":
             # Filter/detail questions should use the returned dimension as
             # table rows instead of falling back to a KPI card or bar chart.
             primary_table = _build_dimension_table(
@@ -194,6 +221,7 @@ def _build_dimension_chart(
     metric: tuple[str, str],
     rows: list[Mapping[str, Any]],
     sort_order: str,
+    position: dict[str, int] | None = None,
 ) -> dict[str, Any]:
     chart_type = str(chart_plan.get("chart_type") or "bar_chart")
     visual_type = {
@@ -203,6 +231,7 @@ def _build_dimension_chart(
         "column": "columnChart",
         "line_chart": "lineChart",
         "line": "lineChart",
+        "multi_metric": "barChart",
     }.get(chart_type, "barChart")
     category_slot = "Category"
     value_slot = "Y"
@@ -221,7 +250,7 @@ def _build_dimension_chart(
     document = _visual_base(
         visual_id=AI_CHART_VISUAL_ID,
         visual_type=visual_type,
-        position={"x": 40, "y": 40, "z": 0, "width": 1840, "height": 500},
+        position=position or {"x": 40, "y": 40, "z": 0, "width": 1840, "height": 500},
         title=title,
         query_state=query_state,
     )

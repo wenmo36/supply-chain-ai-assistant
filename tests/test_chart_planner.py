@@ -46,7 +46,7 @@ def test_multi_metric_comparison_uses_complete_matrix_table():
         }
     )
 
-    assert chart["chart_type"] == "table"
+    assert chart["chart_type"] == "multi_metric"
     assert chart["y_axis"] == "purchase_amount"
     assert chart["y_axes"] == [
         "purchase_amount",
