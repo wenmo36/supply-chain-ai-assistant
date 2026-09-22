@@ -144,6 +144,27 @@ def test_over_receipt_supplier_comparison_does_not_require_order_grouping():
     )
 
 
+def test_over_receipt_order_rule_accepts_qualified_fields():
+    """Order-level checks must accept the aliases produced by the generator."""
+
+    validate_business_sql(
+        """
+        SELECT
+            pd.order_no,
+            SUM(pd.received_qty) - SUM(pd.purchase_qty)
+                AS over_receipt_qty
+        FROM purchase_detail pd
+        GROUP BY pd.order_no
+        HAVING SUM(pd.received_qty) > SUM(pd.purchase_qty)
+        """,
+        {
+            "intent": "filter",
+            "metric": "over_receipt_qty",
+            "dimension": "order",
+        },
+    )
+
+
 def test_supplier_over_receipt_aggregate_cannot_be_summed_after_detail_join():
     plan = {
         "intent": "comparison",

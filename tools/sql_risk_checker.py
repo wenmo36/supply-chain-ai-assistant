@@ -75,19 +75,36 @@ def _check_over_receipt(
 
     normalized = _normalize_sql(sql)
 
-    if "group by order_no" not in normalized:
+    # SQL generators commonly qualify fields with the fact-table alias
+    # (for example ``GROUP BY pd.order_no``).  The business rule is about
+    # the field and grain, not whether the alias is omitted, so accept both
+    # qualified and unqualified forms.
+    order_no_group_pattern = re.compile(
+        r"\bgroup\s+by\s+(?:\b\w+\.)?order_no\b",
+        re.IGNORECASE,
+    )
+    received_sum_pattern = re.compile(
+        r"\bsum\s*\(\s*(?:\b\w+\.)?received_qty\s*\)",
+        re.IGNORECASE,
+    )
+    purchase_sum_pattern = re.compile(
+        r"\bsum\s*\(\s*(?:\b\w+\.)?purchase_qty\s*\)",
+        re.IGNORECASE,
+    )
+
+    if not order_no_group_pattern.search(normalized):
         errors.append(
             "超收检查失败："
             "订单层超收必须 GROUP BY order_no"
         )
 
-    if "sum(received_qty)" not in normalized:
+    if not received_sum_pattern.search(normalized):
         errors.append(
             "超收检查失败："
             "缺少 SUM(received_qty)"
         )
 
-    if "sum(purchase_qty)" not in normalized:
+    if not purchase_sum_pattern.search(normalized):
         errors.append(
             "超收检查失败："
             "缺少 SUM(purchase_qty)"
