@@ -72,7 +72,7 @@ table 'supply_chain_ai purchase_detail'
 	column unit_price
 		dataType: double
 		lineageTag: 3d427509-802b-4fd0-90fc-08d88bfa6d60
-		summarizeBy: sum
+		summarizeBy: none
 		sourceColumn: unit_price
 
 		annotation SummarizationSetBy = Automatic
@@ -105,6 +105,46 @@ table 'supply_chain_ai purchase_detail'
 
 		annotation UnderlyingDateTimeDataType = Date
 
+	measure '采购金额' = SUMX('supply_chain_ai purchase_detail', 'supply_chain_ai purchase_detail'[purchase_qty] * 'supply_chain_ai purchase_detail'[unit_price])
+		formatString: "¥#,##0.00"
+		displayFolder: "核心指标"
+
+	measure '采购数量' = SUM('supply_chain_ai purchase_detail'[purchase_qty])
+		formatString: "#,##0.00"
+		displayFolder: "核心指标"
+
+	measure '收货数量' = SUM('supply_chain_ai purchase_detail'[received_qty])
+		formatString: "#,##0.00"
+		displayFolder: "核心指标"
+
+	measure '未收数量' = SUMX('supply_chain_ai purchase_detail', MAX('supply_chain_ai purchase_detail'[purchase_qty] - 'supply_chain_ai purchase_detail'[received_qty], 0))
+		formatString: "#,##0.00"
+		displayFolder: "异常指标"
+
+	measure '超收数量' = SUMX('supply_chain_ai purchase_detail', MAX('supply_chain_ai purchase_detail'[received_qty] - 'supply_chain_ai purchase_detail'[purchase_qty], 0))
+		formatString: "#,##0.00"
+		displayFolder: "异常指标"
+
+	measure '收货率' = DIVIDE([收货数量], [采购数量])
+		formatString: "0.00%"
+		displayFolder: "核心指标"
+
+	measure '采购订单数' = DISTINCTCOUNT('supply_chain_ai purchase_detail'[order_no])
+		formatString: "#,##0"
+		displayFolder: "核心指标"
+
+	measure '供应商数' = DISTINCTCOUNT('supply_chain_ai purchase_detail'[supplier_id])
+		formatString: "#,##0"
+		displayFolder: "核心指标"
+
+	measure '物料种类数' = DISTINCTCOUNT('supply_chain_ai purchase_detail'[material_code])
+		formatString: "#,##0"
+		displayFolder: "核心指标"
+
+	measure '加权采购单价' = DIVIDE([采购金额], [采购数量])
+		formatString: "¥#,##0.00"
+		displayFolder: "核心指标"
+
 	partition 'supply_chain_ai purchase_detail' = m
 		mode: import
 		source =
@@ -115,4 +155,3 @@ table 'supply_chain_ai purchase_detail'
 				    supply_chain_ai_purchase_detail
 
 	annotation PBI_ResultType = Table
-
