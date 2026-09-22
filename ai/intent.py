@@ -314,6 +314,17 @@ def normalize_analysis_plan(
         plan["dimension"] = None
         plan["time_granularity"] = None
 
+    # A date trend without an explicit granularity should preserve the
+    # underlying time series.  Defaulting to day keeps the local renderer,
+    # SQL result, and Power BI line visual aligned instead of collapsing a
+    # whole month into one summary bar/point.
+    if (
+        plan.get("intent") == "trend"
+        and plan.get("dimension") in {"order_date", "warehouse_date"}
+        and not plan.get("time_granularity")
+    ):
+        plan["time_granularity"] = "day"
+
     if plan.get("intent") == "summary":
         if any(cue in compact_question for cue in grouping_cues):
             plan["intent"] = "comparison"

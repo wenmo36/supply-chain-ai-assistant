@@ -56,6 +56,17 @@ def test_explicit_monthly_trend_remains_trend():
     assert result["time_granularity"] == "month"
 
 
+def test_unspecified_date_trend_defaults_to_daily_series():
+    result = normalize_analysis_plan(
+        _plan(intent="trend", time_granularity=None),
+        "查看采购金额采购日期趋势",
+    )
+
+    assert result["intent"] == "trend"
+    assert result["dimension"] == "order_date"
+    assert result["time_granularity"] == "day"
+
+
 def test_each_supplier_becomes_comparison():
     result = normalize_analysis_plan(
         _plan(metric="receipt_rate", dimension="supplier"),
