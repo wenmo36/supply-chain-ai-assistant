@@ -64,3 +64,49 @@ def test_build_ai_page_creates_bound_visuals_and_dimension_filter(tmp_path):
     assert chart["filterConfig"]["filters"][0]["field"]["Column"]["Property"] == "supplier_name"
     assert chart["visual"]["query"]["sortDefinition"]["sort"][0]["direction"] == "Descending"
     assert table["visual"]["visualType"] == "pivotTable"
+
+
+def test_filter_plan_builds_order_detail_table_instead_of_card(tmp_path):
+    report_root = tmp_path / "SupplyChainAI.Report"
+    pages_root = report_root / "definition" / "pages"
+    pages_root.mkdir(parents=True)
+    (pages_root / "pages.json").write_text(
+        json.dumps({"pageOrder": ["existing-page"], "activePageName": "existing-page"}),
+        encoding="utf-8",
+    )
+    payload = {
+        "question": "查询存在超收的采购订单",
+        "analysis_plan": {
+            "intent": "filter",
+            "metric": "over_receipt_qty",
+            "dimension": "order",
+            "limit": None,
+            "sort": None,
+        },
+        "chart_plan": {
+            "chart_type": "table",
+            "title": "超收数量明细",
+            "x_axis": None,
+            "y_axis": None,
+        },
+        "rows": [
+            {"order_no": "CG752610", "over_receipt_qty": 20.0},
+            {"order_no": "CG752614", "over_receipt_qty": 50.0},
+        ],
+    }
+
+    page_path = build_ai_page_from_payload(payload, report_root)
+    primary = json.loads(
+        (page_path / "visuals" / "f0a1b2c3d4e6" / "visual.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    secondary = json.loads(
+        (page_path / "visuals" / "f0a1b2c3d4e7" / "visual.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert primary["visual"]["visualType"] == "pivotTable"
+    assert primary["visual"]["query"]["queryState"]["Rows"]["projections"][0]["queryRef"].endswith("order_no")
+    assert secondary["isHidden"] is True

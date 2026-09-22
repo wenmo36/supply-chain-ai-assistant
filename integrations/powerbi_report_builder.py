@@ -42,6 +42,7 @@ _DIMENSION_BINDINGS = {
     "order_date": ("supply_chain_ai purchase_detail", "order_date", "order_date"),
     "date": ("supply_chain_ai purchase_detail", "order_date", "order_date"),
     "warehouse_date": ("supply_chain_ai purchase_detail", "warehouse_date", "warehouse_date"),
+    "order": ("supply_chain_ai purchase_detail", "order_no", "order_no"),
     "order_no": ("supply_chain_ai purchase_detail", "order_no", "order_no"),
 }
 
@@ -93,34 +94,73 @@ def build_ai_page_from_payload(
             if str(plan.get("sort") or "desc").lower() == "desc"
             else "Ascending"
         )
-        chart_document = _build_dimension_chart(
-            chart_plan=chart_plan,
-            title=page_title,
-            dimension=dimension_binding,
-            metric=metric_binding,
-            rows=rows,
-            sort_order=sort_order,
-        )
-        table_document = _build_dimension_table(
-            title=page_title,
-            dimension=dimension_binding,
-            metric=metric_binding,
-            rows=rows,
-            sort_order=sort_order,
-        )
-        _write_json(
-            visuals_root / AI_CHART_VISUAL_ID / "visual.json",
-            chart_document,
-        )
-        _write_json(
-            visuals_root / AI_TABLE_VISUAL_ID / "visual.json",
-            table_document,
-        )
+        if chart_plan.get("chart_type") == "table":
+            # Filter/detail questions should use the returned dimension as
+            # table rows instead of falling back to a KPI card or bar chart.
+            primary_table = _build_dimension_table(
+                visual_id=AI_CHART_VISUAL_ID,
+                position={"x": 40, "y": 40, "z": 0, "width": 1840, "height": 900},
+                title=page_title,
+                dimension=dimension_binding,
+                metric=metric_binding,
+                rows=rows,
+                sort_order=sort_order,
+            )
+            hidden_secondary_table = _build_dimension_table(
+                visual_id=AI_TABLE_VISUAL_ID,
+                position={"x": 40, "y": 40, "z": 0, "width": 1840, "height": 900},
+                title=page_title,
+                dimension=dimension_binding,
+                metric=metric_binding,
+                rows=rows,
+                sort_order=sort_order,
+            )
+            hidden_secondary_table["isHidden"] = True
+            _write_json(
+                visuals_root / AI_CHART_VISUAL_ID / "visual.json",
+                primary_table,
+            )
+            _write_json(
+                visuals_root / AI_TABLE_VISUAL_ID / "visual.json",
+                hidden_secondary_table,
+            )
+        else:
+            chart_document = _build_dimension_chart(
+                chart_plan=chart_plan,
+                title=page_title,
+                dimension=dimension_binding,
+                metric=metric_binding,
+                rows=rows,
+                sort_order=sort_order,
+            )
+            table_document = _build_dimension_table(
+                visual_id=AI_TABLE_VISUAL_ID,
+                position={"x": 40, "y": 580, "z": 0, "width": 1840, "height": 420},
+                title=page_title,
+                dimension=dimension_binding,
+                metric=metric_binding,
+                rows=rows,
+                sort_order=sort_order,
+            )
+            _write_json(
+                visuals_root / AI_CHART_VISUAL_ID / "visual.json",
+                chart_document,
+            )
+            _write_json(
+                visuals_root / AI_TABLE_VISUAL_ID / "visual.json",
+                table_document,
+            )
     else:
         card_document = _build_card(title=page_title, metric=metric_binding)
+        hidden_table = _build_card(title=page_title, metric=metric_binding)
+        hidden_table["isHidden"] = True
         _write_json(
             visuals_root / AI_CHART_VISUAL_ID / "visual.json",
             card_document,
+        )
+        _write_json(
+            visuals_root / AI_TABLE_VISUAL_ID / "visual.json",
+            hidden_table,
         )
 
     pages_document = json.loads(pages_path.read_text(encoding="utf-8"))
@@ -186,6 +226,8 @@ def _build_dimension_chart(
 
 def _build_dimension_table(
     *,
+    visual_id: str,
+    position: dict[str, int],
     title: str,
     dimension: tuple[str, str, str],
     metric: tuple[str, str],
@@ -209,10 +251,10 @@ def _build_dimension_table(
         },
     }
     document = _visual_base(
-        visual_id=AI_TABLE_VISUAL_ID,
+        visual_id=visual_id,
         visual_type="pivotTable",
-        position={"x": 40, "y": 580, "z": 0, "width": 1840, "height": 420},
-        title=f"{title}（明细）",
+        position=position,
+        title=_detail_title(title),
         query_state=query_state,
     )
     document["visual"]["query"]["sortDefinition"] = {
@@ -278,6 +320,12 @@ def _visual_base(
 def _column_field(binding: tuple[str, str, str]) -> dict[str, Any]:
     entity, prop, _ = binding
     return {"Column": {"Expression": {"SourceRef": {"Entity": entity}}, "Property": prop}}
+
+
+def _detail_title(title: str) -> str:
+    if "明细" in title:
+        return title
+    return f"{title}（明细）"
 
 
 def _measure_field(binding: tuple[str, str]) -> dict[str, Any]:
