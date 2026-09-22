@@ -38,5 +38,5 @@ POWERBI_REPORT_ROOT=D:\AI\supply_chain_ai_v1\powerbi\SupplyChainAI.Report
 会先转换成 JSON 可处理的类型；不会写入 API Key 或 MySQL 密码。
 
 这一步是本地 PBIR 页面生成，不等同于 Power BI Desktop 中无需重开文件的实时对话控件。
-当前页面中的图表绑定现有语义模型度量，并按 AI 返回的维度值添加筛选；后续可继续
-扩展日期筛选、更多图表类型和页面布局。
+当前页面中的图表绑定现有语义模型度量，优先保证 PBIR 文件能被 Power BI Desktop
+稳定加载；后续再扩展日期筛选、Top N 筛选、排序和更多图表类型。

@@ -88,25 +88,18 @@ def build_ai_page_from_payload(
     _write_json(page_root / "page.json", page_document)
 
     if dimension_binding:
-        sort_order = (
-            "Descending"
-            if str(plan.get("sort") or "desc").lower() == "desc"
-            else "Ascending"
-        )
         chart_document = _build_dimension_chart(
             chart_plan=chart_plan,
             title=page_title,
             dimension=dimension_binding,
             metric=metric_binding,
             rows=rows,
-            sort_order=sort_order,
         )
         table_document = _build_dimension_table(
             title=page_title,
             dimension=dimension_binding,
             metric=metric_binding,
             rows=rows,
-            sort_order=sort_order,
         )
         _write_json(
             visuals_root / AI_CHART_VISUAL_ID / "visual.json",
@@ -140,7 +133,6 @@ def _build_dimension_chart(
     dimension: tuple[str, str, str],
     metric: tuple[str, str],
     rows: list[Mapping[str, Any]],
-    sort_order: str,
 ) -> dict[str, Any]:
     chart_type = str(chart_plan.get("chart_type") or "bar_chart")
     visual_type = {
@@ -172,14 +164,6 @@ def _build_dimension_chart(
         title=title,
         query_state=query_state,
     )
-    document["visual"]["query"]["sortDefinition"] = {
-        "sort": [
-            {"queryRef": _query_ref(metric), "sortOrder": sort_order}
-        ]
-    }
-    filters = _dimension_filter(dimension, rows)
-    if filters:
-        document["visual"]["filters"] = filters
     return document
 
 
@@ -189,7 +173,6 @@ def _build_dimension_table(
     dimension: tuple[str, str, str],
     metric: tuple[str, str],
     rows: list[Mapping[str, Any]],
-    sort_order: str,
 ) -> dict[str, Any]:
     query_state = {
         "Rows": {
@@ -214,14 +197,6 @@ def _build_dimension_table(
         title=f"{title}（明细）",
         query_state=query_state,
     )
-    document["visual"]["query"]["sortDefinition"] = {
-        "sort": [
-            {"queryRef": _query_ref(metric), "sortOrder": sort_order}
-        ]
-    }
-    filters = _dimension_filter(dimension, rows)
-    if filters:
-        document["visual"]["filters"] = filters
     return document
 
 
