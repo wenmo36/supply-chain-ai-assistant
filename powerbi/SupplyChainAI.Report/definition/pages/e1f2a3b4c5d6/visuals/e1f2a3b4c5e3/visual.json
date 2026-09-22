@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.2.0/schema.json",
+  "name": "e1f2a3b4c5e3",
+  "position": {"x": 1240, "y": 30, "z": 0, "width": 640, "height": 180},
+  "visual": {
+    "visualType": "card",
+    "query": {"queryState": {"Values": {"projections": [{"field": {"Measure": {"Expression": {"SourceRef": {"Entity": "supply_chain_ai receipt_detail"}}, "Property": "收货批次"}}, "queryRef": "supply_chain_ai receipt_detail.收货批次"}]}}},
+    "visualContainerObjects": {"title": [{"properties": {"text": {"expr": {"Literal": {"Value": "'收货批次'"}}}, "show": {"expr": {"Literal": {"Value": "true"}}}}}]},
+    "drillFilterOtherVisuals": true
+  }
+}

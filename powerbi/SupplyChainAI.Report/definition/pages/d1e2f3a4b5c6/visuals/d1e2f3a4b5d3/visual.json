@@ -1,0 +1,14 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.2.0/schema.json",
+  "name": "d1e2f3a4b5d3",
+  "position": {"x": 980, "y": 250, "z": 0, "width": 900, "height": 350},
+  "visual": {
+    "visualType": "barChart",
+    "query": {"queryState": {
+      "Category": {"projections": [{"field": {"Column": {"Expression": {"SourceRef": {"Entity": "supply_chain_ai supplier"}}, "Property": "supplier_name"}}, "queryRef": "supply_chain_ai supplier.supplier_name", "active": true}]},
+      "Y": {"projections": [{"field": {"Measure": {"Expression": {"SourceRef": {"Entity": "supply_chain_ai purchase_detail"}}, "Property": "收货率"}}, "queryRef": "supply_chain_ai purchase_detail.收货率"}]}
+    }},
+    "visualContainerObjects": {"title": [{"properties": {"text": {"expr": {"Literal": {"Value": "'供应商收货率'"}}}, "show": {"expr": {"Literal": {"Value": "true"}}}}}]},
+    "drillFilterOtherVisuals": true
+  }
+}

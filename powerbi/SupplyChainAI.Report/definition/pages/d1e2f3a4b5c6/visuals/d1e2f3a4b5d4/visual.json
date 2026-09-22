@@ -1,0 +1,19 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.2.0/schema.json",
+  "name": "d1e2f3a4b5d4",
+  "position": {"x": 40, "y": 640, "z": 0, "width": 1840, "height": 380},
+  "visual": {
+    "visualType": "pivotTable",
+    "query": {"queryState": {
+      "Rows": {"projections": [{"field": {"Column": {"Expression": {"SourceRef": {"Entity": "supply_chain_ai supplier"}}, "Property": "supplier_name"}}, "queryRef": "supply_chain_ai supplier.supplier_name", "active": true}]},
+      "Values": {"projections": [
+        {"field": {"Measure": {"Expression": {"SourceRef": {"Entity": "supply_chain_ai purchase_detail"}}, "Property": "采购金额"}}, "queryRef": "supply_chain_ai purchase_detail.采购金额"},
+        {"field": {"Measure": {"Expression": {"SourceRef": {"Entity": "supply_chain_ai purchase_detail"}}, "Property": "收货率"}}, "queryRef": "supply_chain_ai purchase_detail.收货率"},
+        {"field": {"Measure": {"Expression": {"SourceRef": {"Entity": "supply_chain_ai purchase_detail"}}, "Property": "加权采购单价"}}, "queryRef": "supply_chain_ai purchase_detail.加权采购单价"},
+        {"field": {"Measure": {"Expression": {"SourceRef": {"Entity": "supply_chain_ai purchase_detail"}}, "Property": "超收数量"}}, "queryRef": "supply_chain_ai purchase_detail.超收数量"}
+      ]}
+    }},
+    "visualContainerObjects": {"title": [{"properties": {"text": {"expr": {"Literal": {"Value": "'供应商指标对比'"}}}, "show": {"expr": {"Literal": {"Value": "true"}}}}}]},
+    "drillFilterOtherVisuals": true
+  }
+}
