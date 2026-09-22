@@ -407,37 +407,28 @@ def validate_business_sql(
     errors = []
 
     metric = analysis_plan.get("metric")
+    metrics = [
+        key for key in (analysis_plan.get("metrics") or [metric])
+        if key
+    ]
+    if metric and metric not in metrics:
+        metrics.insert(0, metric)
 
-    # 第二层：事实表 / 粒度
-    _check_purchase_grain(
-        sql,
-        metric,
-        errors
-    )
-
-    # 第三层：指标专属业务规则
-
-    if metric == "purchase_amount":
-
-        _check_purchase_amount(
+    # 第二层：事实表 / 粒度；第三层：每个指标的专属业务规则。
+    # 多指标查询必须同时通过所有指标的业务校验，而不是只校验主指标。
+    for metric_key in metrics:
+        _check_purchase_grain(
             sql,
+            metric_key,
             errors
         )
 
-    elif metric == "over_receipt_qty":
-
-        _check_over_receipt(
-            sql,
-            errors
-        )
-
-    else:
-
-        _check_extended_metric(
-            sql,
-            metric,
-            errors
-        )
+        if metric_key == "purchase_amount":
+            _check_purchase_amount(sql, errors)
+        elif metric_key == "over_receipt_qty":
+            _check_over_receipt(sql, errors)
+        else:
+            _check_extended_metric(sql, metric_key, errors)
 
     _check_time_analysis(
         sql,
@@ -458,11 +449,8 @@ def validate_business_sql(
     )
 
     # 第四层：JOIN 基数风险
-    _check_join_cardinality(
-        sql,
-        metric,
-        errors
-    )
+    for metric_key in metrics:
+        _check_join_cardinality(sql, metric_key, errors)
 
     if errors:
         raise ValueError(

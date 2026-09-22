@@ -106,3 +106,22 @@ def test_over_receipt_question_is_stable_filter():
     assert result["dimension"] == "order"
     assert result["limit"] is None
     assert result["sort"] is None
+
+
+def test_explicit_multi_metric_comparison_preserves_metric_order():
+    result = normalize_analysis_plan(
+        _plan(
+            intent="comparison",
+            metric="purchase_amount",
+            dimension="supplier",
+            sort="desc",
+        ),
+        "按供应商比较采购金额、收货率和未收数量",
+    )
+
+    assert result["metric"] == "purchase_amount"
+    assert result["metrics"] == [
+        "purchase_amount",
+        "receipt_rate",
+        "unreceived_qty",
+    ]

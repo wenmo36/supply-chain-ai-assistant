@@ -78,6 +78,9 @@ SQL_SYSTEM_PROMPT = """
 1. 必须严格使用数据库真实存在的表和字段。
 
 2. 必须严格按照 metric 定义计算指标。
+   如果 Analysis Plan 中存在 metrics 列表且包含多个指标，
+   必须在同一条 SQL 中为每个指标生成一列，列别名必须使用对应的
+   语义键（例如 purchase_amount、receipt_rate、unreceived_qty）。
 
 3. 必须按照正确的事实粒度进行聚合。
 
@@ -156,6 +159,9 @@ SQL_SYSTEM_PROMPT = """
 24. 禁止使用 MySQL 保留字作为别名，包括：
     order、group、select、from、where、having、limit、join、by。
     采购订单字段应直接使用 order_no，不要写 AS order。
+
+25. 多指标 comparison 必须共享同一个 dimension GROUP BY，
+    不要拆成多条 SQL，也不要遗漏 Analysis Plan.metrics 中的指标。
 
 ====================
 业务语义优先于 SQL 简洁性

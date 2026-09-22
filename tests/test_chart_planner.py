@@ -29,3 +29,30 @@ def test_filter_uses_business_named_table():
 
     assert chart["chart_type"] == "table"
     assert chart["title"] == "超收数量明细"
+
+
+def test_multi_metric_comparison_uses_complete_matrix_table():
+    chart = build_chart_plan(
+        {
+            "intent": "comparison",
+            "metric": "purchase_amount",
+            "metrics": [
+                "purchase_amount",
+                "receipt_rate",
+                "unreceived_qty",
+            ],
+            "dimension": "supplier",
+            "sort": "desc",
+        }
+    )
+
+    assert chart["chart_type"] == "table"
+    assert chart["y_axis"] == "purchase_amount"
+    assert chart["y_axes"] == [
+        "purchase_amount",
+        "receipt_rate",
+        "unreceived_qty",
+    ]
+    assert "采购金额" in chart["title"]
+    assert "收货率" in chart["title"]
+    assert "未收数量" in chart["title"]

@@ -61,9 +61,22 @@ def build_ai_page_from_payload(
     rows = data.get("rows") or []
 
     metric = plan.get("metric") or chart_plan.get("y_axis")
-    metric_binding = _METRIC_BINDINGS.get(metric)
-    if not metric_binding:
-        raise ValueError(f"无法将指标映射到 Power BI 度量值：{metric}")
+    metric_keys = []
+    for key in (plan.get("metrics") or chart_plan.get("y_axes") or [metric]):
+        if key and key not in metric_keys:
+            metric_keys.append(key)
+    if metric and metric not in metric_keys:
+        metric_keys.insert(0, metric)
+    unknown_metrics = [key for key in metric_keys if key not in _METRIC_BINDINGS]
+    if unknown_metrics:
+        raise ValueError(f"无法将指标映射到 Power BI 度量值：{unknown_metrics}")
+    metric_bindings = [
+        _METRIC_BINDINGS[key]
+        for key in metric_keys
+    ]
+    if not metric_bindings:
+        raise ValueError(f"无法将指标映射到 Power BI 度量值：{metric_keys or metric}")
+    metric_binding = metric_bindings[0]
 
     dimension_key = plan.get("dimension") or chart_plan.get("x_axis")
     dimension_binding = _DIMENSION_BINDINGS.get(dimension_key)
@@ -102,7 +115,7 @@ def build_ai_page_from_payload(
                 position={"x": 40, "y": 40, "z": 0, "width": 1840, "height": 900},
                 title=page_title,
                 dimension=dimension_binding,
-                metric=metric_binding,
+                metrics=metric_bindings,
                 rows=rows,
                 sort_order=sort_order,
             )
@@ -111,7 +124,7 @@ def build_ai_page_from_payload(
                 position={"x": 40, "y": 40, "z": 0, "width": 1840, "height": 900},
                 title=page_title,
                 dimension=dimension_binding,
-                metric=metric_binding,
+                metrics=metric_bindings,
                 rows=rows,
                 sort_order=sort_order,
             )
@@ -138,7 +151,7 @@ def build_ai_page_from_payload(
                 position={"x": 40, "y": 580, "z": 0, "width": 1840, "height": 420},
                 title=page_title,
                 dimension=dimension_binding,
-                metric=metric_binding,
+                metrics=metric_bindings,
                 rows=rows,
                 sort_order=sort_order,
             )
@@ -230,10 +243,14 @@ def _build_dimension_table(
     position: dict[str, int],
     title: str,
     dimension: tuple[str, str, str],
-    metric: tuple[str, str],
+    metrics: list[tuple[str, str]],
     rows: list[Mapping[str, Any]],
     sort_order: str,
 ) -> dict[str, Any]:
+    if not metrics:
+        raise ValueError("Power BI 明细表至少需要一个指标")
+
+    primary_metric = metrics[0]
     query_state = {
         "Rows": {
             "projections": [
@@ -246,7 +263,11 @@ def _build_dimension_table(
         },
         "Values": {
             "projections": [
-                {"field": _measure_field(metric), "queryRef": _query_ref(metric)}
+                {
+                    "field": _measure_field(metric),
+                    "queryRef": _query_ref(metric),
+                }
+                for metric in metrics
             ]
         },
     }
@@ -259,7 +280,7 @@ def _build_dimension_table(
     )
     document["visual"]["query"]["sortDefinition"] = {
         "sort": [
-            {"field": _measure_field(metric), "direction": sort_order}
+            {"field": _measure_field(primary_metric), "direction": sort_order}
         ],
         "isDefaultSort": False,
     }

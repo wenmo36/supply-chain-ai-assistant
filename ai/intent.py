@@ -30,6 +30,25 @@ from semantic.dimensions import DIMENSIONS
 from semantic.glossary import GLOSSARY
 
 
+# These cues are used after the model response so a question that explicitly
+# names several business metrics is represented losslessly in the plan.  The
+# model schema intentionally remains backward compatible with the original
+# single ``metric`` field; ``metrics`` is a deterministic extension.
+_METRIC_CUES = (
+    ("采购金额", "purchase_amount"),
+    ("采购数量", "purchase_qty"),
+    ("收料数量", "received_qty"),
+    ("收货数量", "received_qty"),
+    ("超收数量", "over_receipt_qty"),
+    ("未收数量", "unreceived_qty"),
+    ("采购订单数", "purchase_order_count"),
+    ("供应商数", "supplier_count"),
+    ("物料种类数", "material_count"),
+    ("收货率", "receipt_rate"),
+    ("加权采购单价", "weighted_unit_price"),
+)
+
+
 FILTER_SCHEMA = {
     "type": "object",
     "properties": {
@@ -348,5 +367,43 @@ def normalize_analysis_plan(
         plan["intent"] = "filter"
         plan["limit"] = None
         plan["sort"] = None
+
+    # Preserve every explicitly requested metric.  The original contract only
+    # exposed one primary metric, so keep ``metric`` for compatibility and add
+    # an ordered ``metrics`` list for SQL/chart/report consumers.
+    detected_metrics = []
+    for cue, metric_key in _METRIC_CUES:
+        position = compact_question.find(cue)
+        if position < 0:
+            continue
+        detected_metrics.append((position, metric_key))
+    detected_metrics.sort(key=lambda item: item[0])
+
+    ordered_metrics = []
+    for _, metric_key in detected_metrics:
+        if metric_key not in ordered_metrics:
+            ordered_metrics.append(metric_key)
+
+    existing_metrics = [
+        key for key in (plan.get("metrics") or [])
+        if key in METRICS
+    ]
+    if len(ordered_metrics) > 1:
+        primary_metric = plan.get("metric")
+        if primary_metric in ordered_metrics:
+            ordered_metrics.remove(primary_metric)
+            ordered_metrics.insert(0, primary_metric)
+        else:
+            plan["metric"] = ordered_metrics[0]
+        plan["metrics"] = ordered_metrics
+    elif len(existing_metrics) > 1:
+        if plan.get("metric") in existing_metrics:
+            existing_metrics.remove(plan["metric"])
+            existing_metrics.insert(0, plan["metric"])
+        else:
+            plan["metric"] = existing_metrics[0]
+        plan["metrics"] = existing_metrics
+    else:
+        plan["metrics"] = [plan.get("metric")] if plan.get("metric") else []
 
     return plan

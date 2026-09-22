@@ -82,6 +82,8 @@ REPAIR_SYSTEM_PROMPT = """
 10. 输出 JSON，不输出 Markdown，不输出 ```sql。
 11. 禁止使用 MySQL 保留字作为未加引号的别名；
     采购订单字段使用 order_no，不要使用 AS order。
+12. 如果 Analysis Plan.metrics 包含多个指标，修复后的 SQL 必须保留
+    同一维度分组，并为每个指标输出对应的语义键列别名。
 
 特别注意：
 
