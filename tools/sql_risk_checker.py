@@ -194,13 +194,22 @@ def _check_extended_metric(
     elif metric == "receipt_rate":
         required = ("sum(", "received_qty", "purchase_qty", "nullif")
         percentage_pattern = re.compile(r"\*\s*100(?:\.0+)?\b")
+        guarded_case_pattern = re.compile(
+            r"case\s+when.*purchase_qty.*=\s*0.*"
+            r"else.*received_qty.*purchase_qty.*\*\s*100",
+            re.IGNORECASE,
+        )
+        safe_division = (
+            all(token in normalized for token in required)
+            or guarded_case_pattern.search(normalized) is not None
+        )
         if (
-            not all(token in normalized for token in required)
+            not safe_division
             or not percentage_pattern.search(normalized)
         ):
             errors.append(
                 "收货率检查失败：必须使用汇总收料数量除以汇总采购数量，"
-                "并通过 NULLIF 防止除零"
+                "并通过 NULLIF 或 CASE 防止除零"
             )
 
     elif metric == "weighted_unit_price":

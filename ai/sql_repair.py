@@ -88,7 +88,7 @@ REPAIR_SYSTEM_PROMPT = """
     GROUP BY order_no 和 HAVING；供应商或物料对比应按目标维度汇总。
 14. 收货率必须保留
     SUM(received_qty) / NULLIF(SUM(purchase_qty), 0) * 100
-    的安全除零公式。
+    的安全除零公式，或使用等价的 CASE WHEN 零值保护。
 15. 禁止把供应商级 over_receipt_qty 聚合结果回连到 purchase_detail
     后再次 SUM；应在 supplier_id 粒度直接 JOIN 各个汇总结果。
 

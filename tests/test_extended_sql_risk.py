@@ -174,3 +174,21 @@ def test_supplier_over_receipt_aggregate_cannot_be_summed_after_detail_join():
             """,
             plan,
         )
+
+
+def test_receipt_rate_case_zero_guard_is_accepted():
+    validate_business_sql(
+        """
+        SELECT supplier_id,
+               CASE WHEN SUM(purchase_qty) = 0 THEN 0
+                    ELSE SUM(received_qty) / SUM(purchase_qty) * 100 END
+                   AS receipt_rate
+        FROM purchase_detail
+        GROUP BY supplier_id
+        """,
+        {
+            "intent": "comparison",
+            "metric": "receipt_rate",
+            "dimension": "supplier",
+        },
+    )

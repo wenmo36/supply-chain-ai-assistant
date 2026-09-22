@@ -101,8 +101,8 @@ SQL_SYSTEM_PROMPT = """
 
    收货率必须使用：
    SUM(received_qty) / NULLIF(SUM(purchase_qty), 0) * 100
-   不要省略 NULLIF；如果需要处理零采购数量，可在该表达式外层使用
-   CASE，但 ELSE 分支仍必须保留上述安全公式。
+   不要省略安全除零处理；也可以使用
+   CASE WHEN SUM(purchase_qty) = 0 THEN 0 ELSE ... END。
 
 9. 超收数量：
    - 如果按订单筛选/排名，必须先按 order_no 聚合，
