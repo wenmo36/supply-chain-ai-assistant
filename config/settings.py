@@ -45,6 +45,16 @@ AI_MAX_OUTPUT_TOKENS = int(
 # integration.  Empty by default so existing CLI behavior is unchanged.
 POWERBI_RESULT_PATH = os.getenv("POWERBI_RESULT_PATH", "").strip() or None
 
+POWERBI_REPORT_ROOT = os.getenv(
+    "POWERBI_REPORT_ROOT",
+    "powerbi/SupplyChainAI.Report",
+).strip()
+
+POWERBI_AUTO_BUILD = os.getenv(
+    "POWERBI_AUTO_BUILD",
+    "false",
+).strip().lower() in {"1", "true", "yes", "on"}
+
 
 MYSQL_CONFIG = {
 

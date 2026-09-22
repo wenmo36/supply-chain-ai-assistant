@@ -20,12 +20,23 @@ python main.py
 
 每次成功执行问题后，文件会以原子替换方式更新。父目录不存在时会自动创建。
 
+如果希望同时自动更新 PBIP 中的 `AI分析` 页面，再增加：
+
+```text
+POWERBI_AUTO_BUILD=true
+POWERBI_REPORT_ROOT=D:\AI\supply_chain_ai_v1\powerbi\SupplyChainAI.Report
+```
+
+运行前建议先关闭 Power BI Desktop；程序会把 AI 页面写入 PBIR 文件，随后重新打开
+`SupplyChainAI.pbip` 即可看到新增或更新的 `AI分析` 页面。原有的总览、供应商分析和
+异常分析页面不会被覆盖。
+
 ## 数据契约
 
 文件包含 `schema_version`、`generated_at`、`question`、`analysis_plan`、
 `chart_plan`、`rows`、`sql` 和 `repair_count`。结果中的日期、时间和 Decimal
 会先转换成 JSON 可处理的类型；不会写入 API Key 或 MySQL 密码。
 
-这一步是可审计的结果交接，不等同于 Power BI Desktop 中的实时对话控件。
-确认 JSON 稳定后，再把它接成 Power Query 表或本地 API，即可继续做报表内的
-AI 分析页。
+这一步是本地 PBIR 页面生成，不等同于 Power BI Desktop 中无需重开文件的实时对话控件。
+当前页面中的图表绑定现有语义模型度量，并按 AI 返回的维度值添加筛选；后续可继续
+扩展日期筛选、更多图表类型和页面布局。

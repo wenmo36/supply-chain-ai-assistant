@@ -3,9 +3,14 @@ import logging
 
 from ai.agent import run_analysis
 from config.logging_config import configure_logging
-from config.settings import POWERBI_RESULT_PATH
+from config.settings import (
+    POWERBI_AUTO_BUILD,
+    POWERBI_REPORT_ROOT,
+    POWERBI_RESULT_PATH,
+)
 from errors import format_user_error
 from integrations.powerbi_adapter import write_powerbi_payload
+from integrations.powerbi_report_builder import build_ai_page_from_payload
 from visualization.renderer import render
 
 
@@ -37,12 +42,24 @@ def main():
                         POWERBI_RESULT_PATH,
                     )
                     print(f"Power BI 分析结果已更新：{powerbi_path.resolve()}")
+                    if POWERBI_AUTO_BUILD:
+                        page_path = build_ai_page_from_payload(
+                            result,
+                            POWERBI_REPORT_ROOT,
+                        )
+                        print(f"Power BI AI 页面已更新：{page_path.resolve()}")
                 except OSError as exc:
                     logger.warning(
                         "Power BI result export failed; keeping analysis output",
                         exc_info=True,
                     )
                     print(f"Power BI 结果写入失败，已保留本次分析结果：{exc}")
+                except ValueError as exc:
+                    logger.warning(
+                        "Power BI AI page build failed; keeping analysis output",
+                        exc_info=True,
+                    )
+                    print(f"Power BI AI 页面生成失败，已保留本次分析结果：{exc}")
 
             print("\n--- Analysis Plan ---")
             print(json.dumps(
