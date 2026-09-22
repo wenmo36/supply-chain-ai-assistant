@@ -88,18 +88,25 @@ def build_ai_page_from_payload(
     _write_json(page_root / "page.json", page_document)
 
     if dimension_binding:
+        sort_order = (
+            "Descending"
+            if str(plan.get("sort") or "desc").lower() == "desc"
+            else "Ascending"
+        )
         chart_document = _build_dimension_chart(
             chart_plan=chart_plan,
             title=page_title,
             dimension=dimension_binding,
             metric=metric_binding,
             rows=rows,
+            sort_order=sort_order,
         )
         table_document = _build_dimension_table(
             title=page_title,
             dimension=dimension_binding,
             metric=metric_binding,
             rows=rows,
+            sort_order=sort_order,
         )
         _write_json(
             visuals_root / AI_CHART_VISUAL_ID / "visual.json",
@@ -133,6 +140,7 @@ def _build_dimension_chart(
     dimension: tuple[str, str, str],
     metric: tuple[str, str],
     rows: list[Mapping[str, Any]],
+    sort_order: str,
 ) -> dict[str, Any]:
     chart_type = str(chart_plan.get("chart_type") or "bar_chart")
     visual_type = {
@@ -164,6 +172,15 @@ def _build_dimension_chart(
         title=title,
         query_state=query_state,
     )
+    document["visual"]["query"]["sortDefinition"] = {
+        "sort": [
+            {"field": _measure_field(metric), "direction": sort_order}
+        ],
+        "isDefaultSort": False,
+    }
+    filter_config = _dimension_filter_config(dimension, rows)
+    if filter_config:
+        document["filterConfig"] = filter_config
     return document
 
 
@@ -173,6 +190,7 @@ def _build_dimension_table(
     dimension: tuple[str, str, str],
     metric: tuple[str, str],
     rows: list[Mapping[str, Any]],
+    sort_order: str,
 ) -> dict[str, Any]:
     query_state = {
         "Rows": {
@@ -197,6 +215,15 @@ def _build_dimension_table(
         title=f"{title}（明细）",
         query_state=query_state,
     )
+    document["visual"]["query"]["sortDefinition"] = {
+        "sort": [
+            {"field": _measure_field(metric), "direction": sort_order}
+        ],
+        "isDefaultSort": False,
+    }
+    filter_config = _dimension_filter_config(dimension, rows)
+    if filter_config:
+        document["filterConfig"] = filter_config
     return document
 
 
@@ -262,10 +289,10 @@ def _query_ref(binding: tuple[str, ...]) -> str:
     return f"{binding[0]}.{binding[1]}"
 
 
-def _dimension_filter(
+def _dimension_filter_config(
     binding: tuple[str, str, str],
     rows: list[Mapping[str, Any]],
-) -> list[dict[str, Any]]:
+) -> dict[str, Any] | None:
     entity, prop, row_key = binding
     values = []
     seen = set()
@@ -276,44 +303,44 @@ def _dimension_filter(
         seen.add(value)
         values.append(value)
     if not values:
-        return []
+        return None
 
     source_alias = "ai"
-    return [
-        {
-            "name": "AIResultDimensionFilter",
-            "expression": {
-                "Column": {
-                    "Expression": {"SourceRef": {"Entity": entity}},
-                    "Property": prop,
-                }
-            },
-            "filter": {
-                "Version": 2,
-                "From": [{"Name": source_alias, "Entity": entity, "Type": 0}],
-                "Where": [
-                    {
-                        "Condition": {
-                            "In": {
-                                "Expressions": [
-                                    {
-                                        "Column": {
-                                            "Expression": {
-                                                "SourceRef": {"Source": source_alias}
-                                            },
-                                            "Property": prop,
+    return {
+        "filters": [
+            {
+                "name": "AIResultDimensionFilter",
+                "field": _column_field(binding),
+                "type": "Categorical",
+                "filter": {
+                    "Version": 2,
+                    "From": [{"Name": source_alias, "Entity": entity}],
+                    "Where": [
+                        {
+                            "Condition": {
+                                "In": {
+                                    "Expressions": [
+                                        {
+                                            "Column": {
+                                                "Expression": {
+                                                    "SourceRef": {"Source": source_alias}
+                                                },
+                                                "Property": prop,
+                                            }
                                         }
-                                    }
-                                ],
-                                "Values": [[{"Literal": {"Value": _literal_value(value)}}] for value in values],
+                                    ],
+                                    "Values": [
+                                        [{"Literal": {"Value": _literal_value(value)}}]
+                                        for value in values
+                                    ],
+                                }
                             }
                         }
-                    }
-                ],
-            },
-            "type": "Categorical",
-        }
-    ]
+                    ],
+                },
+            }
+        ]
+    }
 
 
 def _literal(value: str) -> str:
