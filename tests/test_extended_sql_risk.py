@@ -118,3 +118,27 @@ def test_unreceived_ranking_rejects_zero_groups():
             """,
             plan,
         )
+
+
+def test_over_receipt_supplier_comparison_does_not_require_order_grouping():
+    plan = {
+        "intent": "comparison",
+        "metric": "purchase_amount",
+        "metrics": ["purchase_amount", "receipt_rate", "over_receipt_qty"],
+        "dimension": "supplier",
+        "sort": "desc",
+    }
+
+    validate_business_sql(
+        """
+        SELECT supplier_id,
+               SUM(purchase_qty * unit_price) AS purchase_amount,
+               SUM(received_qty) / NULLIF(SUM(purchase_qty), 0) * 100
+                   AS receipt_rate,
+               SUM(GREATEST(received_qty - purchase_qty, 0))
+                   AS over_receipt_qty
+        FROM purchase_detail
+        GROUP BY supplier_id
+        """,
+        plan,
+    )

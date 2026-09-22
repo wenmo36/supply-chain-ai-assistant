@@ -100,6 +100,39 @@ def _check_over_receipt(
         )
 
 
+def _check_over_receipt_at_dimension(
+    sql: str,
+    errors: list[str],
+) -> None:
+    """Validate a non-order over-receipt metric at the requested grain.
+
+    ``GROUP BY order_no`` and ``HAVING`` are mandatory for an order-level
+    exception query, but they are not requirements for a supplier/material
+    comparison.  At those grains the query may aggregate a safe positive
+    difference directly or join an order-level aggregate back to the target
+    dimension.
+    """
+
+    normalized = _normalize_sql(sql)
+    has_difference_formula = (
+        "received_qty" in normalized
+        and "purchase_qty" in normalized
+        and (
+            "greatest" in normalized
+            or (
+                "sum(" in normalized
+                and "received_qty" in normalized
+                and "purchase_qty" in normalized
+            )
+        )
+    )
+    if not has_difference_formula:
+        errors.append(
+            "超收检查失败：按当前分析维度汇总时必须使用"
+            " received_qty 与 purchase_qty 的安全差额公式"
+        )
+
+
 def _check_extended_metric(
     sql: str,
     metric: str,
@@ -426,7 +459,14 @@ def validate_business_sql(
         if metric_key == "purchase_amount":
             _check_purchase_amount(sql, errors)
         elif metric_key == "over_receipt_qty":
-            _check_over_receipt(sql, errors)
+            order_level = (
+                analysis_plan.get("intent") in {"filter", "ranking"}
+                and analysis_plan.get("dimension") in {"order", "order_no"}
+            )
+            if order_level:
+                _check_over_receipt(sql, errors)
+            else:
+                _check_over_receipt_at_dimension(sql, errors)
         else:
             _check_extended_metric(sql, metric_key, errors)
 

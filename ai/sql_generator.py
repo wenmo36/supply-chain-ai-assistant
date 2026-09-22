@@ -99,8 +99,17 @@ SQL_SYSTEM_PROMPT = """
 8. 收料数量：
    received_qty
 
-9. 订单层超收：
-   SUM(received_qty) > SUM(purchase_qty)
+   收货率必须使用：
+   SUM(received_qty) / NULLIF(SUM(purchase_qty), 0) * 100
+   不要省略 NULLIF；如果需要处理零采购数量，可在该表达式外层使用
+   CASE，但 ELSE 分支仍必须保留上述安全公式。
+
+9. 超收数量：
+   - 如果按订单筛选/排名，必须先按 order_no 聚合，
+     使用 SUM(received_qty) > SUM(purchase_qty) 的 HAVING 条件。
+   - 如果按供应商、物料等其他维度比较，必须在目标维度汇总安全的
+     超收差额，或先完成订单级聚合后再汇总到目标维度；不要强制把
+     order_no 暴露为最终分组字段。
 
 10. 只允许 SELECT 或 WITH 开头的查询。
 

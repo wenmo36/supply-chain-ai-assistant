@@ -84,6 +84,11 @@ REPAIR_SYSTEM_PROMPT = """
     采购订单字段使用 order_no，不要使用 AS order。
 12. 如果 Analysis Plan.metrics 包含多个指标，修复后的 SQL 必须保留
     同一维度分组，并为每个指标输出对应的语义键列别名。
+13. 超收数量只有在订单维度的筛选/排名查询中才强制要求
+    GROUP BY order_no 和 HAVING；供应商或物料对比应按目标维度汇总。
+14. 收货率必须保留
+    SUM(received_qty) / NULLIF(SUM(purchase_qty), 0) * 100
+    的安全除零公式。
 
 特别注意：
 
