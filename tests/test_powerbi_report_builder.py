@@ -60,8 +60,9 @@ def test_build_ai_page_creates_bound_visuals_and_dimension_filter(tmp_path):
     assert pages["activePageName"] == AI_PAGE_ID
     assert chart["visual"]["visualType"] == "barChart"
     assert chart["visual"]["query"]["queryState"]["Y"]["projections"][0]["queryRef"].endswith("采购金额")
-    assert chart["filters"][0]["filter"]["Where"][0]["Condition"]["In"]["Values"] == [
+    assert chart["visual"]["filters"][0]["filter"]["Where"][0]["Condition"]["In"]["Values"] == [
         [{"Literal": {"Value": "'供应商A'"}}],
         [{"Literal": {"Value": "'供应商B'"}}],
     ]
+    assert chart["visual"]["query"]["sortDefinition"]["sort"][0]["sortOrder"] == "Descending"
     assert table["visual"]["visualType"] == "pivotTable"
