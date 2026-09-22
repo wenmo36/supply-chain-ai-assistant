@@ -10,6 +10,8 @@ Visualization Renderer 测试
 """
 
 from ai.analysis_result import AnalysisResult
+from matplotlib.axes import Axes
+from unittest.mock import patch
 
 from visualization.renderer import (
     _display_name,
@@ -164,3 +166,40 @@ def test_table_render():
 
     assert path.exists()
     assert path.suffix.lower() == ".png"
+
+
+def test_single_point_line_chart_does_not_fallback_to_bar(tmp_path):
+    """A one-period trend remains a line chart in the local PNG."""
+
+    result = AnalysisResult(
+        question="按月查看采购金额趋势",
+        analysis_plan={
+            "intent": "trend",
+            "metric": "purchase_amount",
+            "dimension": "order_date",
+            "time_granularity": "month",
+        },
+        sql="SELECT '2026-08' AS period, 67300 AS purchase_amount",
+        rows=[{"period": "2026-08", "purchase_amount": 67300.0}],
+        chart_plan={
+            "chart_type": "line_chart",
+            "title": "采购金额采购日期趋势",
+            "x_axis": "order_date",
+            "y_axis": "purchase_amount",
+            "sort": "asc",
+            "orientation": None,
+            "show_data_labels": False,
+        },
+    )
+
+    with patch.object(
+        Axes,
+        "bar",
+        side_effect=AssertionError("line_chart 不应退化成 bar_chart"),
+    ):
+        from visualization.renderer import _render_line_chart
+
+        output_path = _render_line_chart(result, tmp_path / "trend.png")
+
+    assert output_path.exists()
+    assert output_path.suffix == ".png"

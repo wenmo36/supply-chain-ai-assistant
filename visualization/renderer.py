@@ -538,26 +538,23 @@ def _render_line_chart(
         result
     )
 
+    # Keep the renderer faithful to Chart Plan.  A single time bucket is
+    # still a line-chart result; silently changing it to a bar chart makes
+    # the local PNG disagree with the Power BI visual.
+    ax.plot(
+        labels,
+        values,
+        marker="o",
+        color="#287EB8"
+    )
+
     if len(labels) == 1:
-        ax.bar(
-            labels,
-            values,
-            color="#287EB8",
-            width=0.45
-        )
-        ax.text(
-            0,
-            values[0],
+        ax.annotate(
             _format_value(values[0], result.chart_plan["y_axis"]),
+            (0, values[0]),
+            xytext=(0, 10),
+            textcoords="offset points",
             ha="center",
-            va="bottom"
-        )
-    else:
-        ax.plot(
-            labels,
-            values,
-            marker="o",
-            color="#287EB8"
         )
 
     ax.set_xlabel(
