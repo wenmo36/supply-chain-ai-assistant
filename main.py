@@ -3,7 +3,9 @@ import logging
 
 from ai.agent import run_analysis
 from config.logging_config import configure_logging
+from config.settings import POWERBI_RESULT_PATH
 from errors import format_user_error
+from integrations.powerbi_adapter import write_powerbi_payload
 from visualization.renderer import render
 
 
@@ -27,6 +29,20 @@ def main():
 
         try:
             result = run_analysis(question)
+
+            if POWERBI_RESULT_PATH:
+                try:
+                    powerbi_path = write_powerbi_payload(
+                        result,
+                        POWERBI_RESULT_PATH,
+                    )
+                    print(f"Power BI 分析结果已更新：{powerbi_path.resolve()}")
+                except OSError as exc:
+                    logger.warning(
+                        "Power BI result export failed; keeping analysis output",
+                        exc_info=True,
+                    )
+                    print(f"Power BI 结果写入失败，已保留本次分析结果：{exc}")
 
             print("\n--- Analysis Plan ---")
             print(json.dumps(

@@ -41,6 +41,11 @@ AI_MAX_OUTPUT_TOKENS = int(
 )
 
 
+# Optional UTF-8 JSON handoff consumed by Power Query or another downstream
+# integration.  Empty by default so existing CLI behavior is unchanged.
+POWERBI_RESULT_PATH = os.getenv("POWERBI_RESULT_PATH", "").strip() or None
+
+
 MYSQL_CONFIG = {
 
     "host": os.getenv(
