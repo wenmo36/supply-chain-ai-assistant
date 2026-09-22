@@ -18,6 +18,15 @@ POWERBI_RESULT_PATH=D:\AI\supply_chain_ai_v1\output\powerbi\latest_analysis.json
 python main.py
 ```
 
+也可以只执行一次问题，不进入交互循环：
+
+```powershell
+python tools/run_analysis_once.py "查询存在超收的采购订单，并生成异常明细表"
+```
+
+在启用 `POWERBI_RESULT_PATH` 和 `POWERBI_AUTO_BUILD=true` 时，这条命令会一次完成
+JSON、PNG 和 PBIP `AI分析` 页更新，适合后续接入网页聊天框或 PowerShell 快捷方式。
+
 每次成功执行问题后，文件会以原子替换方式更新。父目录不存在时会自动创建。
 
 如果希望同时自动更新 PBIP 中的 `AI分析` 页面，再增加：
