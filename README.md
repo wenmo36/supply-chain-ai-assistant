@@ -139,7 +139,7 @@ git clone https://github.com/wenmo36/supply-chain-ai-assistant.git
 cd supply-chain-ai-assistant
 
 python -m venv .venv
-.\\.venv\\Scripts\\Activate.ps1
+.\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
 
 Copy-Item .env.example .env
