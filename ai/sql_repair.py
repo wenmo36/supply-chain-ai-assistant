@@ -91,6 +91,9 @@ REPAIR_SYSTEM_PROMPT = """
     的安全除零公式，或使用等价的 CASE WHEN 零值保护。
 15. 禁止把供应商级 over_receipt_qty 聚合结果回连到 purchase_detail
     后再次 SUM；应在 supplier_id 粒度直接 JOIN 各个汇总结果。
+16. 表别名必须前后一致：purchase_detail 使用 pd，supplier 使用 sup，
+    供应商汇总 CTE 使用 sa，超收汇总 CTE 使用 orq；禁止引用未声明的
+    s.supplier_id。
 
 特别注意：
 

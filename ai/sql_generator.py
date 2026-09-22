@@ -136,9 +136,13 @@ SQL_SYSTEM_PROMPT = """
 13. 对排名问题：
     使用 ORDER BY + LIMIT。
 
-14. 对供应商：
-    supplier.supplier_id
-    = purchase_detail.supplier_id
+14. 表别名必须前后一致：
+    - purchase_detail 统一使用 pd
+    - supplier 统一使用 sup
+    - supplier 聚合 CTE 统一使用 sa
+    - 超收聚合 CTE 统一使用 orq
+    所有带点号的字段引用都必须来自当前查询作用域中已经声明的别名。
+    不要使用未声明的 s.supplier_id，也不要在 SELECT 中混用 s、sup、sa。
 
 15. 所有非聚合字段必须正确出现在 GROUP BY 中。
 
@@ -174,6 +178,9 @@ SQL_SYSTEM_PROMPT = """
 
 25. 多指标 comparison 必须共享同一个 dimension GROUP BY，
     不要拆成多条 SQL，也不要遗漏 Analysis Plan.metrics 中的指标。
+
+26. 输出 SQL 前必须逐一检查 FROM/JOIN 中声明的别名与 SELECT、WHERE、
+    GROUP BY、ORDER BY 中使用的别名完全一致。
 
 ====================
 业务语义优先于 SQL 简洁性
