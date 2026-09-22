@@ -1,0 +1,16 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.2.0/schema.json",
+  "name": "b1c2d3e4f5a7",
+  "position": {"x": 980, "y": 250, "z": 0, "width": 900, "height": 340},
+  "visual": {
+    "visualType": "lineChart",
+    "query": {
+      "queryState": {
+        "Category": {"projections": [{"field": {"Column": {"Expression": {"SourceRef": {"Entity": "supply_chain_ai purchase_detail"}}, "Property": "order_date"}}, "queryRef": "supply_chain_ai purchase_detail.order_date", "active": true}]},
+        "Y": {"projections": [{"field": {"Measure": {"Expression": {"SourceRef": {"Entity": "supply_chain_ai purchase_detail"}}, "Property": "采购金额"}}, "queryRef": "supply_chain_ai purchase_detail.采购金额"}]}
+      }
+    },
+    "visualContainerObjects": {"title": [{"properties": {"text": {"expr": {"Literal": {"Value": "'采购金额趋势'"}}}, "show": {"expr": {"Literal": {"Value": "true"}}}}}]},
+    "drillFilterOtherVisuals": true
+  }
+}

@@ -1,7 +1,7 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.1.0/schema.json",
   "name": "fee0e4192398619030ba",
-  "displayName": "第 1 页",
+  "displayName": "供应链总览",
   "displayOption": "FitToPage",
   "height": 1080,
   "width": 1920
